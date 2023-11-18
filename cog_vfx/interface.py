@@ -5,45 +5,28 @@ from PySide6.QtCore import QSize, Qt
 import pkg_resources
 from . import shot_utils, make_shot, utils
 from .shot_page import ShotPage
-from .houdini_wrapper import launch_houdini
 
 PACKAGE_NAME = "cog_vfx"
 def get_asset_path(path):
-    return pkg_resources.resource_filename(PACKAGE_NAME, path)
+    asset_path = pkg_resources.resource_filename(PACKAGE_NAME, path)
+    print("get asset path", asset_path)
+    return asset_path
 
 
 
-class ImageWindow(QWidget):
-    def __init__(self):
-        super().__init__()
-
-        # Create a scene
-        self.scene = QGraphicsScene(self)
-
-        # Create a pixmap item with your image
-        pixmap = QPixmap("path_to_your_image.jpg")
-        self.pixmapItem = QGraphicsPixmapItem(pixmap)
-        self.scene.addItem(self.pixmapItem)
-
-        # Create a graphics view
-        self.view = QGraphicsView(self.scene, self)
-        self.view.setRenderHint(QPainter.Antialiasing)
-
-        # Set the scaling mode
-        self.view.setAspectRatioMode(Qt.KeepAspectRatio)
-
-        # Create a layout and add the graphics view to the layout
-        layout = QVBoxLayout()
-        layout.addWidget(self.view)
-        self.setLayout(layout)
-
-    def resizeEvent(self, event):
-        self.view.fitInView(self.pixmapItem, Qt.KeepAspectRatio)
-        super(ImageWindow, self).resizeEvent(event)
 
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
+
+        #stylesheet
+        stylesheet_path = get_asset_path("assets/style/style.css")
+        with open(stylesheet_path, "r") as file:
+            stylesheet = file.read()
+
+        self.setStyleSheet(stylesheet)
+
+        self.resize(1200,600)
         self.initUI()
         self.setWindowTitle("Cog Manager")
         self.project_root = utils.get_project_root()
@@ -92,7 +75,7 @@ class MainWindow(QWidget):
 
         # button icon
         button.setIcon(QIcon(icon_path))
-        button.setIconSize(QSize(50,50))
+        button.setIconSize(QSize(35,35))
 
         button.setStyleSheet(
             "QPushButton {"
@@ -109,7 +92,7 @@ class MainWindow(QWidget):
 
         #button size
         button.setMinimumSize(130, 50)
-        button.setMaximumSize(230, 100)
+        button.setMaximumSize(230, 80)
         button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
 

@@ -31,11 +31,11 @@ def set_environment_variables():
 
 def launch_application(app_path, file_path):
     print("Launching app:", app_path, "file:", file_path)
-    subprocess.run([app_path, file_path])
+    subprocess.Popen([app_path, file_path])
 
 def launch_houdini(file_path):
     set_environment_variables()
-    app_path = 'path/to/houdini.exe' if platform.system() == 'Windows' else '/opt/hfs19.5.605/bin/houdini'
+    app_path = r'C:\Program Files\Side Effects Software\Houdini 19.5.605\bin\houdini.exe' if platform.system() == 'Windows' else '/opt/hfs19.5.605/bin/houdini'
     launch_application(app_path, file_path)
 
 
