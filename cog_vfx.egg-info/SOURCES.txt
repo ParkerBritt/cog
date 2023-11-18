@@ -1,0 +1,13 @@
+README.md
+setup.py
+assets/icons/main_icon.png
+cog_vfx/__init__.py
+cog_vfx/interface.py
+cog_vfx/main.py
+cog_vfx/utils.py
+cog_vfx.egg-info/PKG-INFO
+cog_vfx.egg-info/SOURCES.txt
+cog_vfx.egg-info/dependency_links.txt
+cog_vfx.egg-info/entry_points.txt
+cog_vfx.egg-info/requires.txt
+cog_vfx.egg-info/top_level.txt

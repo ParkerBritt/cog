@@ -1,0 +1,3 @@
+[console_scripts]
+cog = cog_vfx.main:main
+
