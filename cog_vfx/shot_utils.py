@@ -18,7 +18,8 @@ def get_shots():
         current_shot.update({
             "name":shot_base_name,
             "dir":shot_dir,
-            "formatted_name":"Shot " +shot_base_name.split("SH")[1],
+            "formatted_name":shot_base_name.split("SH")[1],
+            "num":int(shot_base_name.split("SH")[1]),
         })
 
         # get json data

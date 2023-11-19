@@ -3,7 +3,7 @@ from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, Q
 from PySide6.QtGui import QIcon, QFont, QPixmap
 from PySide6.QtCore import QSize, Qt
 import pkg_resources
-from . import shot_utils, make_shot, utils
+from . import shot_utils, utils
 from .shot_page import ShotPage
 
 PACKAGE_NAME = "cog_vfx"

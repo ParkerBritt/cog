@@ -1,10 +1,11 @@
-import os
-from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedLayout, QListWidget, QSizePolicy, QMenu, QSplitter, QListWidgetItem, QSpinBox
+import os, json
+from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedLayout, QListWidget, QSizePolicy, QMenu, QSplitter, QListWidgetItem, QSpinBox, QTextEdit, QDialog
 from PySide6.QtGui import QIcon, QFont, QPixmap
 from PySide6.QtCore import QSize, Qt
 import pkg_resources
 from . import shot_utils, make_shot, utils
 from .houdini_wrapper import launch_houdini
+from .interface_utils import quick_dialog
 
 role_mapping = {
     "shot_data": Qt.UserRole + 1,
@@ -17,11 +18,17 @@ def get_asset_path(path):
 def get_shot_data(shot_list=None, item=None):
     shots = shot_utils.get_shots()
     if(item == None):
-        selected_shot = shot_list.selectedItems()[0]
+        selected_shot = shot_list.selectedItems()
+        if(len(selected_shot)>0):
+            selected_shot = selected_shot[0]
+        else:
+            return None
     else:
         selected_shot = item
 
     return selected_shot.data(role_mapping["shot_data"])
+
+
 
 class ShotListWidget(QListWidget):
     def __init__(self, parent=None):
@@ -59,12 +66,13 @@ class ShotListWidget(QListWidget):
     def handle_aciton_delete(self):
         print("Deleting Shot")
 
-class NewShotInterface(QWidget):
-    def __init__(self, parent=None):
+class NewShotInterface(QDialog):
+    def __init__(self, parent=None, shot_list=None):
         super(NewShotInterface, self).__init__(parent)
         self.setWindowFlags(Qt.Window)
         self.setWindowTitle("New Shot")
         self.resize(400,600)
+        self.shot_list = shot_list
 
         self.initUI()
 
@@ -74,7 +82,13 @@ class NewShotInterface(QWidget):
         # Shot Number
         self.layout.addWidget(QLabel("Shot Number"))
         self.select_shot_num = QSpinBox()
+        shot_num = 10
+        if(self.shot_list and len(self.shot_list.selectedItems())>0):
+            print("shot_list", self.shot_list)
+            shot_data = get_shot_data(self.shot_list)
+            shot_num = shot_data["num"]+10
         self.select_shot_num.setRange(1, 9999)
+        self.select_shot_num.setValue(shot_num)
         self.layout.addWidget(self.select_shot_num)
 
         # frame range title
@@ -92,18 +106,69 @@ class NewShotInterface(QWidget):
         self.select_end_frame.setRange(1001, 9999)
         self.select_end_frame.setValue(1100)
         range_layout.addWidget(self.select_end_frame)
-
         self.layout.addLayout(range_layout)
+
+        # shot description
+        self.layout.addWidget(QLabel("Shot Description"))
+        self.shot_description_box = QTextEdit()
+        self.layout.addWidget(self.shot_description_box)
+
+        # add stretch
         self.layout.addStretch()
 
+        # bottom buttons
+        bottom_buttons_layout = QHBoxLayout()
+        bottom_button_min_size = (50,30)
+        ok_button = QPushButton("ok")
+        cancel_button = QPushButton("cancel")
+        ok_button.clicked.connect(self.on_ok_pressed)
+        cancel_button.clicked.connect(self.on_cancel_pressed)
+        ok_button.setMinimumSize(*bottom_button_min_size)
+        cancel_button.setMinimumSize(*bottom_button_min_size)
+        bottom_buttons_layout.addStretch()
+        # add widgets
+        bottom_buttons_layout.addWidget(ok_button)
+        bottom_buttons_layout.addWidget(cancel_button)
+        self.layout.addLayout(bottom_buttons_layout)
+
         self.setLayout(self.layout)
-        
+
+    def on_ok_pressed(self):
+        print("ok_pressed")
+        # get shot data in variables from widgets
+        start_frame = self.select_start_frame.value()
+        end_frame = self.select_end_frame.value()
+        shot_num = self.select_shot_num.value()
+        shot_desc = self.shot_description_box.toPlainText()
+
+        # format shot data in dictionary
+        new_shot_data = {
+            "start_frame":start_frame,
+            "end_frame":end_frame,
+            "description":shot_desc
+        }
+
+
+        shot_file_name = "SH"+str(shot_num).zfill(4)
+        print("creating shot", shot_file_name)
+        make_shot.new_shot(self, shot_file_name, new_shot_data)
+        self.finished_status = 0
+        self.close()
+
+    def on_cancel_pressed(self):
+        self.finished_status = 1
+        self.close()
+
+# ------------- SHOT PAGE -----------------
 
 class ShotPage(QWidget):
     def __init__(self, parent=None):
         super(ShotPage, self).__init__(parent)
-        self.shots = shot_utils.get_shots()
+        self.set_shots()
         self.create_shot_page()
+
+    def set_shots(self):
+        self.shots = shot_utils.get_shots()
 
 
     def create_shot_page(self):
@@ -123,16 +188,20 @@ class ShotPage(QWidget):
         self.shot_list.itemSelectionChanged.connect(self.update_shot_info)
         self.shot_list.setAlternatingRowColors(True)
         self.shot_list.setIconSize(QSize(500,50))
-        self.add_to_shots_list()
+        self.populate_shot_list()
         self.shot_central_layout.addWidget(self.shot_list)
 
         # buttons
         bottom_buttons_layout = QHBoxLayout()
         bottom_buttons_layout.addStretch()
 
+        self.shot_edit_button = QPushButton("Edit")
+        self.shot_edit_button.clicked.connect(self.on_shot_edit)
+        bottom_buttons_layout.addWidget(self.shot_edit_button)
+
         self.shot_refresh_button = QPushButton("Refresh")
         # self.shot_refresh_button.setMaximumWidth(25)
-        self.shot_refresh_button.clicked.connect(self.add_to_shots_list)
+        self.shot_refresh_button.clicked.connect(self.populate_shot_list)
         bottom_buttons_layout.addWidget(self.shot_refresh_button)
 
         self.shot_add_button = QPushButton("+")
@@ -142,21 +211,27 @@ class ShotPage(QWidget):
 
         self.shot_delete_button = QPushButton("-")
         self.shot_delete_button.setMaximumWidth(25)
+        self.shot_delete_button.clicked.connect(self.on_shot_delete)
         bottom_buttons_layout.addWidget(self.shot_delete_button)
 
         self.shot_central_layout.addLayout(bottom_buttons_layout)
 
     def create_shot_side_panel(self):
-        self.shot_side_layout = QVBoxLayout()
+        self.shot_side_widget = QWidget()
+        self.shot_side_widget.setStyleSheet("background-color: #1b1e20; border-radius: 15px;")
+        self.shot_side_layout = QVBoxLayout(self.shot_side_widget)
+        self.shot_page_layout.addWidget(self.shot_side_widget)
+
+        # make font
+        header_font = QFont()
+        header_font.setPointSize(12)
 
         # title
         section_title = QLabel("Shot Info")
+        section_title.setFont(header_font)
         # section_title.setMinimumWidth(200)
         self.shot_side_layout.addWidget(section_title)
 
-        # shot name
-        self.shot_name_label = QLabel("SH")
-        self.shot_side_layout.addWidget(self.shot_name_label)
 
 
         # shot thumbnail
@@ -166,13 +241,41 @@ class ShotPage(QWidget):
         self.shot_thumbnail.setMaximumSize(*self.shot_thumbnail_size)
         self.shot_side_layout.addWidget(self.shot_thumbnail)
 
+        # general shot data container
+        self.shot_misc_data_widget = QWidget()
+        self.shot_misc_data_widget.setStyleSheet("background-color: #2a2e32; border-radius: 15px;")
+        shot_misc_data_layout = QVBoxLayout(self.shot_misc_data_widget)
+        self.shot_side_layout.addWidget(self.shot_misc_data_widget)
+        general_shot_data_title = QLabel("Misc Data")
+        general_shot_data_title.setFont(header_font)
+        shot_misc_data_layout.addWidget(general_shot_data_title)
+
+        # shot name
+        self.shot_name_label = QLabel("SH")
+        self.shot_name_label.hide()
+        shot_misc_data_layout.addWidget(self.shot_name_label)
+
         # frame range
         self.shot_frame_range_label = QLabel("")
-        self.shot_side_layout.addWidget(self.shot_frame_range_label)
+        shot_misc_data_layout.addWidget(self.shot_frame_range_label)
+
+        # shot description
+        self.shot_description_widget = QWidget()
+        self.shot_description_widget.setStyleSheet("background-color: #2a2e32; border-radius: 15px;")
+        shot_description_layout = QVBoxLayout(self.shot_description_widget)
+        self.shot_side_layout.addWidget(self.shot_description_widget)
+
+        description_title = QLabel("Shot Description")
+        description_title.setFont(header_font)
+        self.shot_description_title = description_title
+        shot_description_layout.addWidget(self.shot_description_title)
+        self.shot_description_label = QLabel("")
+        shot_description_layout.addWidget(self.shot_description_label)
+
+        self.shot_description_widget.hide()
 
 
         self.shot_side_layout.addStretch()
-        self.shot_page_layout.addLayout(self.shot_side_layout)
 
 
     def update_shot_info(self):
@@ -182,7 +285,8 @@ class ShotPage(QWidget):
         print("sel_shot_data", sel_shot_data)
 
         # shot name
-        self.shot_name_label.setText(sel_shot_data["name"])
+        self.shot_name_label.setText("Shot: " + sel_shot_data["formatted_name"])
+        self.shot_name_label.show()
 
         # shot thumbnail
         thumbnail_dir = os.path.join(sel_shot_data["dir"], "thumbnail.png")
@@ -194,24 +298,47 @@ class ShotPage(QWidget):
 
         # frame_range 
         if("start_frame" in sel_shot_data and "end_frame" in sel_shot_data):
+            self.shot_frame_range_label.show()
             self.shot_frame_range_label.setText(f'Frame Range: {sel_shot_data["start_frame"]}-{sel_shot_data["end_frame"]}')
         else:
-            self.shot_frame_range_label.setText("")
+            self.shot_frame_range_label.hide()
 
+        # shot description
+        if("description" in sel_shot_data):
+            self.shot_description_widget.show()
+            self.shot_description_label.setText(sel_shot_data["description"])
+        else:
+            self.shot_description_widget.hide()
+
+
+    def on_shot_edit(self):
+        print("edit shot")
 
     def on_shot_add(self):
         # make_shot.new_shot("SH030")
-        # self.add_to_shots_list()
+        # self.populate_shot_list()
         print('shot add')
-        self.new_shot = NewShotInterface(self)
-        self.new_shot.show()
+        self.new_shot = NewShotInterface(self, self.shot_list)
+        self.new_shot.finished.connect(self.on_shot_add_finished)
+        # self.new_shot.show()
+        self.new_shot.exec()
 
-    def add_to_shots_list(self):
+    def on_shot_add_finished(self):
+        finished_stats = self.new_shot.finished_status
+        if(finished_stats == 0):
+            self.populate_shot_list()
+
+    def on_shot_delete(self):
+        print('shot delete')
+        quick_dialog(self, "Deleting shots isn't implemented yet")
+
+    def populate_shot_list(self):
         self.shot_list.clear()
 
+        self.set_shots()
         for shot in self.shots:
             # self.shot_list.addItem()
-            item = QListWidgetItem(shot["formatted_name"], self.shot_list)
+            item = QListWidgetItem("Shot " + shot["formatted_name"], self.shot_list)
             item.setData(role_mapping["shot_data"], shot)
             thumbnail_path = os.path.join(shot["dir"],"thumbnail.png")
             print("thumbnail path", thumbnail_path)

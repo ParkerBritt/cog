@@ -20,6 +20,14 @@ QPushButton:pressed {
     background-color: #777; /* Even lighter grey when pressed */
 }
 
+QSpinBox {
+    background-color: #1b1e20;
+}
+
+QTextEdit {
+    background-color: #1b1e20;
+}
+
 /* Style for QListWidget */
 QListWidget {
     background-color: #1b1e20; /* Assuming you want a grey background for the list */
