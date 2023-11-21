@@ -89,7 +89,7 @@ def move_shot(qt_parent, source_shot_name, dest_shot_name):
         print(f"ERROR: source dir: {source_dir} not found")
         return
     if(os.path.exists(dest_dir)):
-        quick_dialog(qt_parent, f"ERROR: file {dest_dir} already exists, cancelling shot move", "Can't move Shot")
+        quick_dialog(qt_parent, f"{dest_shot_name} already exists.\nCancelling shot move.", "Can't move Shot")
         return
     print("TARGET DIR", source_dir)
     print("DEST DIR", dest_dir)

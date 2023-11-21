@@ -42,6 +42,7 @@ class ShotListWidget(QListWidget):
         if item is not None:
             # Add "Open Shot" action only if clicked on an item
             action_open = contextMenu.addAction("Open Shot")
+            action_render = contextMenu.addAction("Render Shot")
             action_delete = contextMenu.addAction("Delete Shot")
             shot_data = get_shot_data(item=item)
 
@@ -58,7 +59,7 @@ class ShotListWidget(QListWidget):
         print("Opening Shot")
         scene_path = os.path.join(shot_data["dir"],"scene.hipnc")
         if(os.path.exists(scene_path)):
-            launch_houdini(scene_path)
+            launch_houdini(scene_path, shot_data)
         else:
             print("Error:", shot_data["file_name"],"has no scene.hipnc file")
 
@@ -99,20 +100,44 @@ class NewShotInterface(QDialog):
 
         # frame range title
         self.layout.addWidget(QLabel("Frame Range"))
-        range_layout = QHBoxLayout()
+        frame_range_layout = QHBoxLayout()
+        self.layout.addLayout(frame_range_layout)
 
         # frame start box one
         self.select_start_frame = QSpinBox()
         self.select_start_frame.setRange(1001, 9999)
         self.select_start_frame.setValue(1001)
-        range_layout.addWidget(self.select_start_frame)
+        frame_range_layout.addWidget(self.select_start_frame)
 
         # frame start box one
         self.select_end_frame = QSpinBox()
         self.select_end_frame.setRange(1001, 9999)
         self.select_end_frame.setValue(1100)
-        range_layout.addWidget(self.select_end_frame)
-        self.layout.addLayout(range_layout)
+        frame_range_layout.addWidget(self.select_end_frame)
+
+        # resolution title
+        self.layout.addWidget(QLabel("Resolution"))
+        res_layout = QHBoxLayout()
+        self.layout.addLayout(res_layout)
+
+        # resolution width
+        self.select_res_width = QSpinBox()
+        self.select_res_width.setRange(1, 9999)
+        self.select_res_width.setValue(1920)
+        res_layout.addWidget(self.select_res_width)
+
+        # resolution height
+        self.select_res_height = QSpinBox()
+        self.select_res_height.setRange(1, 9999)
+        self.select_res_height.setValue(1080)
+        res_layout.addWidget(self.select_res_height)
+
+        # fps
+        self.layout.addWidget(QLabel("FPS"))
+        self.select_fps = QSpinBox()
+        self.select_fps.setRange(1, 9999)
+        self.select_fps.setValue(24)
+        self.layout.addWidget(self.select_fps)
 
         # shot description
         self.layout.addWidget(QLabel("Shot Description"))
@@ -146,6 +171,9 @@ class NewShotInterface(QDialog):
         self.fill_value(self.select_start_frame, "start_frame")
         self.fill_value(self.select_end_frame, "end_frame")
         self.fill_value(self.shot_description_box, "description")
+        self.fill_value(self.select_res_width, "res_width")
+        self.fill_value(self.select_res_height, "res_height")
+        self.fill_value(self.select_fps, "fps")
 
     def fill_value(self, widget, value):
         if(self.existing_shot_data[value]):
@@ -162,6 +190,9 @@ class NewShotInterface(QDialog):
         start_frame = self.select_start_frame.value()
         end_frame = self.select_end_frame.value()
         shot_num = self.select_shot_num.value()
+        res_width = self.select_res_width.value()
+        res_height = self.select_res_height.value()
+        fps = self.select_fps.value()
         shot_desc = self.shot_description_box.toPlainText()
 
         # format shot data in dictionary
@@ -170,6 +201,9 @@ class NewShotInterface(QDialog):
             "start_frame":start_frame,
             "end_frame":end_frame,
             "description":shot_desc,
+            "res_width":res_width,
+            "res_height":res_height,
+            "fps":fps
         }
 
 
@@ -261,22 +295,34 @@ class ShotPage(QWidget):
         self.shot_side_layout.addWidget(self.shot_thumbnail)
 
         # general shot data container
-        self.shot_misc_data_widget = QWidget()
-        self.shot_misc_data_widget.setStyleSheet("QWidget {background-color: #2a2e32; border-radius: 15px;}")
-        shot_misc_data_layout = QVBoxLayout(self.shot_misc_data_widget)
-        self.shot_side_layout.addWidget(self.shot_misc_data_widget)
-        general_shot_data_title = QLabel("Misc Data")
+        self.shot_render_data_widget = QWidget()
+        self.shot_render_data_widget.setStyleSheet("QWidget {background-color: #2a2e32; border-radius: 15px;}")
+        shot_render_data_layout = QVBoxLayout(self.shot_render_data_widget)
+        self.shot_side_layout.addWidget(self.shot_render_data_widget)
+        general_shot_data_title = QLabel("Render Data")
         general_shot_data_title.setFont(header_font)
-        shot_misc_data_layout.addWidget(general_shot_data_title)
+        shot_render_data_layout.addWidget(general_shot_data_title)
 
         # shot name
         self.shot_name_label = QLabel("SH")
         self.shot_name_label.hide()
-        shot_misc_data_layout.addWidget(self.shot_name_label)
+        shot_render_data_layout.addWidget(self.shot_name_label)
 
         # frame range
         self.shot_frame_range_label = QLabel("")
-        shot_misc_data_layout.addWidget(self.shot_frame_range_label)
+        shot_render_data_layout.addWidget(self.shot_frame_range_label)
+
+        # render res
+        self.shot_render_res_label = QLabel("Resolution: 1920x1080")
+        shot_render_data_layout.addWidget(self.shot_render_res_label)
+
+        # render fps
+        self.shot_render_fps_label = QLabel("FPS: 24")
+        shot_render_data_layout.addWidget(self.shot_render_fps_label)
+
+        # codec
+
+        # date recorded
 
         # shot description
         self.shot_description_widget = QWidget()
@@ -330,12 +376,41 @@ class ShotPage(QWidget):
         else:
             self.shot_frame_range_label.hide()
 
+        if("res_height" in sel_shot_data and "res_width" in sel_shot_data):
+            self.shot_render_res_label.setText(f'Resolution: {sel_shot_data["res_width"]}x{sel_shot_data["res_height"]}')
+            self.shot_render_res_label.show()
+        else:
+            self.shot_render_res_label.hide()
+
+        if("fps" in sel_shot_data):
+            self.shot_render_fps_label.setText(f'Fps: {sel_shot_data["fps"]}')
+            self.shot_render_fps_label.show()
+        else:
+            self.shot_render_fps_label.hide()
+
+
         # shot description
-        if("description" in sel_shot_data):
+        if("description" in sel_shot_data and sel_shot_data["description"]!=""):
             self.shot_description_widget.show()
             self.shot_description_label.setText(sel_shot_data["description"])
         else:
             self.shot_description_widget.hide()
+
+
+
+    # def update_shot_info_label(self, widget, text, check_values, sel_shot_data):
+    #     set_visible = True
+    #     if(not isinstance(check_values, list)):
+    #         check_values = [check_values]
+    #
+    #     for value in check_values:
+    #         if(not value in sel_shot_data):
+    #             widget.hide()
+    #             return
+    #
+    #     if(isinstance(widget, QLabel)):
+    #         widget.setText(text)
+    #     widget.show()
 
     def on_shot_add(self):
         # make_shot.new_shot("SH030")
