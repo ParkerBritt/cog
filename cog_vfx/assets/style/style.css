@@ -8,7 +8,7 @@
 QPushButton {
     background-color: #3f4348; /* Darker grey for buttons */
     color: #fff; /* White text */
-    border-radius: 15px; /* Rounded corners */
+    border-radius: 8px; /* Rounded corners */
     padding: 5px 10px; /* Padding inside buttons */
 }
 

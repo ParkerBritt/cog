@@ -1,12 +1,18 @@
 from .utils import get_project_root
 import os, json
 
-def get_shots():
+def get_shots(shot_name_filter = None):
     project_root = get_project_root()
     shots_path = os.path.join(project_root, "shots")
     shot_dirs = os.listdir(shots_path)
     shot_dirs.sort()
     shots = []
+
+    if(shot_name_filter):
+        if(shot_name_filter in shot_dirs):
+            shot_dirs = [shot_dirs[shot_dirs.index(shot_name_filter)]]
+        else:
+            return 0
 
     for i, shot_base_name in enumerate(shot_dirs):
         # ignore files starting with underscores '_'

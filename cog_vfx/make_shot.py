@@ -14,14 +14,14 @@ def new_shot(qt_parent, shot_name, shot_data = None):
 
     # check paths
     if(os.path.exists(dest_root)):
-        print("ERROR: file {dest_root} already exists, cancelling shot creation")
-        quick_dialog(qt_parent, "ERROR: file {dest_root} already exists, cancelling shot creation", "Can't Create Shot")
+        print(f"ERROR: file {dest_root} already exists, cancelling shot creation")
+        quick_dialog(qt_parent, f"ERROR: file {dest_root} already exists, cancelling shot creation", "Can't Create Shot")
         return None
 
     print(f"using template {template_path}, copying to {dest_root}")
     copy_template(shot_name, template_path, dest_root)
     if(shot_data):
-        make_json(os.path.join(dest_root, "shot_data.json"), shot_data)
+        make_shot_json(os.path.join(dest_root, "shot_data.json"), shot_data)
 
 
 def copy_template(shot_name, template_path, dest_root):
@@ -58,9 +58,20 @@ def copy_template(shot_name, template_path, dest_root):
 
             # print("dst_path:", dst_path)
 
-def make_json(save_path, shot_data):
+def make_shot_json(save_path, shot_data):
     # json dump
     json_save_path = save_path 
+    json_data = json.dumps(shot_data, indent=4)
+    with open(json_save_path, "w") as file:
+        file.write(json_data)
+
+def edit_shot_json(save_path, edit_shot_data):
+    json_save_path = save_path 
+
+    with open(json_save_path, "r") as file:
+        shot_data = json.load(file)
+    shot_data.update(edit_shot_data)
+
     json_data = json.dumps(shot_data, indent=4)
     with open(json_save_path, "w") as file:
         file.write(json_data)

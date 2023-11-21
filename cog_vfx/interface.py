@@ -6,11 +6,6 @@ import pkg_resources
 from . import shot_utils, utils
 from .shot_page import ShotPage
 
-PACKAGE_NAME = "cog_vfx"
-def get_asset_path(path):
-    asset_path = pkg_resources.resource_filename(PACKAGE_NAME, path)
-    print("get asset path", asset_path)
-    return asset_path
 
 
 
@@ -20,11 +15,7 @@ class MainWindow(QWidget):
         super().__init__()
 
         #stylesheet
-        stylesheet_path = get_asset_path("assets/style/style.css")
-        with open(stylesheet_path, "r") as file:
-            stylesheet = file.read()
-
-        self.setStyleSheet(stylesheet)
+        self.setStyleSheet(utils.get_style_sheet())
 
         self.resize(1200,600)
         self.initUI()
@@ -32,7 +23,7 @@ class MainWindow(QWidget):
         self.project_root = utils.get_project_root()
 
     def initUI(self):
-        icon_path = get_asset_path('assets/icons/main_icon.png')
+        icon_path = utils.get_asset_path('assets/icons/main_icon.png')
         print("icon_path", icon_path)
         self.setWindowIcon(QIcon(icon_path))
         # Main layout
@@ -50,9 +41,9 @@ class MainWindow(QWidget):
 
         # Create tabs and corresponding content
         self.create_tab("  Shots", 0,
-                        get_asset_path('assets/icons/shot_white.png'))
+                        utils.get_asset_path('assets/icons/shot_white.png'))
         self.create_tab("  Assets", 1,
-                        get_asset_path('assets/icons/sculpture_white.png'))
+                        utils.get_asset_path('assets/icons/sculpture_white.png'))
         # button padding
         self.sidebar_layout.addStretch()
 
@@ -78,13 +69,14 @@ class MainWindow(QWidget):
         button.setIconSize(QSize(35,35))
 
         button.setStyleSheet(
-            "QPushButton {"
-            "    padding: 10px;"  # Adjust the overall padding
-            "}"
-            "QPushButton::text {"
-            "    padding-left: 10px;"  # Adjust the padding on the left of the text
-            "}"
-        )
+            """QPushButton {
+                padding: 10px;
+                border-radius: 15px;
+            }
+            QPushButton::text {
+                padding-left: 10px;
+            }
+        """)
 
         font = QFont()
         font.setPointSize(12)

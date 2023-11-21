@@ -67,12 +67,16 @@ class ShotListWidget(QListWidget):
         print("Deleting Shot")
 
 class NewShotInterface(QDialog):
-    def __init__(self, parent=None, shot_list=None):
+    def __init__(self, parent=None, shot_list=None, edit=False, shot_data=None):
         super(NewShotInterface, self).__init__(parent)
         self.setWindowFlags(Qt.Window)
         self.setWindowTitle("New Shot")
         self.resize(400,600)
         self.shot_list = shot_list
+
+        # edit mode stuff
+        self.edit_mode=edit
+        self.existing_shot_data = shot_data
 
         self.initUI()
 
@@ -86,7 +90,9 @@ class NewShotInterface(QDialog):
         if(self.shot_list and len(self.shot_list.selectedItems())>0):
             print("shot_list", self.shot_list)
             shot_data = get_shot_data(self.shot_list)
-            shot_num = shot_data["num"]+10
+            shot_num = shot_data["num"]
+            if(not self.edit_mode):
+                shot_num+=10
         self.select_shot_num.setRange(1, 9999)
         self.select_shot_num.setValue(shot_num)
         self.layout.addWidget(self.select_shot_num)
@@ -133,26 +139,41 @@ class NewShotInterface(QDialog):
 
         self.setLayout(self.layout)
 
+        if(self.existing_shot_data):
+            self.fill_existing_values()
+
+    def fill_existing_values(self):
+        self.fill_value(self.select_start_frame, "start_frame")
+        self.fill_value(self.select_end_frame, "end_frame")
+        self.fill_value(self.shot_description_box, "description")
+
+    def fill_value(self, widget, value):
+        if(self.existing_shot_data[value]):
+            if(isinstance(widget, QTextEdit)):
+                widget.setPlainText(self.existing_shot_data[value])
+            elif(isinstance(widget, QSpinBox)):
+                widget.setValue(self.existing_shot_data[value])
+
     def on_ok_pressed(self):
         print("ok_pressed")
         # get shot data in variables from widgets
+        self.finished_status = 0
+
         start_frame = self.select_start_frame.value()
         end_frame = self.select_end_frame.value()
         shot_num = self.select_shot_num.value()
         shot_desc = self.shot_description_box.toPlainText()
 
         # format shot data in dictionary
-        new_shot_data = {
+        self.new_shot_data = {
+            "shot_num":shot_num,
             "start_frame":start_frame,
             "end_frame":end_frame,
-            "description":shot_desc
+            "description":shot_desc,
         }
 
 
-        shot_file_name = "SH"+str(shot_num).zfill(4)
-        print("creating shot", shot_file_name)
-        make_shot.new_shot(self, shot_file_name, new_shot_data)
-        self.finished_status = 0
+        self.shot_file_name = "SH"+str(shot_num).zfill(4)
         self.close()
 
     def on_cancel_pressed(self):
@@ -195,9 +216,6 @@ class ShotPage(QWidget):
         bottom_buttons_layout = QHBoxLayout()
         bottom_buttons_layout.addStretch()
 
-        self.shot_edit_button = QPushButton("Edit")
-        self.shot_edit_button.clicked.connect(self.on_shot_edit)
-        bottom_buttons_layout.addWidget(self.shot_edit_button)
 
         self.shot_refresh_button = QPushButton("Refresh")
         # self.shot_refresh_button.setMaximumWidth(25)
@@ -218,7 +236,7 @@ class ShotPage(QWidget):
 
     def create_shot_side_panel(self):
         self.shot_side_widget = QWidget()
-        self.shot_side_widget.setStyleSheet("background-color: #1b1e20; border-radius: 15px;")
+        self.shot_side_widget.setStyleSheet("QWidget {background-color: #1b1e20; border-radius: 15px;}")
         self.shot_side_layout = QVBoxLayout(self.shot_side_widget)
         self.shot_page_layout.addWidget(self.shot_side_widget)
 
@@ -243,7 +261,7 @@ class ShotPage(QWidget):
 
         # general shot data container
         self.shot_misc_data_widget = QWidget()
-        self.shot_misc_data_widget.setStyleSheet("background-color: #2a2e32; border-radius: 15px;")
+        self.shot_misc_data_widget.setStyleSheet("QWidget {background-color: #2a2e32; border-radius: 15px;}")
         shot_misc_data_layout = QVBoxLayout(self.shot_misc_data_widget)
         self.shot_side_layout.addWidget(self.shot_misc_data_widget)
         general_shot_data_title = QLabel("Misc Data")
@@ -261,7 +279,7 @@ class ShotPage(QWidget):
 
         # shot description
         self.shot_description_widget = QWidget()
-        self.shot_description_widget.setStyleSheet("background-color: #2a2e32; border-radius: 15px;")
+        self.shot_description_widget.setStyleSheet("QWidget {background-color: #2a2e32; border-radius: 15px;}")
         shot_description_layout = QVBoxLayout(self.shot_description_widget)
         self.shot_side_layout.addWidget(self.shot_description_widget)
 
@@ -277,10 +295,18 @@ class ShotPage(QWidget):
 
         self.shot_side_layout.addStretch()
 
+        self.shot_edit_button = QPushButton("Edit")
+        self.shot_edit_button.clicked.connect(self.on_shot_edit)
+        self.shot_edit_button.setStyleSheet(utils.get_style_sheet())
+        self.shot_side_layout.addWidget(self.shot_edit_button)
+
 
     def update_shot_info(self):
         # setup
-        selected_shot = self.shot_list.selectedItems()[0]
+        selected_items = self.shot_list.selectedItems()
+        if(len(selected_items)==0):
+            return
+        selected_shot = selected_items[0]
         sel_shot_data = get_shot_data(item=selected_shot) 
         print("sel_shot_data", sel_shot_data)
 
@@ -310,10 +336,6 @@ class ShotPage(QWidget):
         else:
             self.shot_description_widget.hide()
 
-
-    def on_shot_edit(self):
-        print("edit shot")
-
     def on_shot_add(self):
         # make_shot.new_shot("SH030")
         # self.populate_shot_list()
@@ -323,10 +345,56 @@ class ShotPage(QWidget):
         # self.new_shot.show()
         self.new_shot.exec()
 
+
+    def on_shot_edit(self):
+        selected_items = self.shot_list.selectedItems()
+        if(len(selected_items)==0):
+            print("no shot selected for editing")
+            return
+
+        selected_shot_data = selected_items[0].data(role_mapping["shot_data"])
+
+        self.new_shot = NewShotInterface(self, self.shot_list, edit=True, shot_data=selected_shot_data)
+        self.new_shot.finished.connect(self.on_shot_edit_finished)
+        self.new_shot.exec()
+
+    def on_shot_edit_finished(self):
+        # setup variables
+        selected_shot = self.shot_list.selectedItems()[0]
+        old_shot_data = selected_shot.data(role_mapping["shot_data"])
+        shot_dir = old_shot_data["dir"]
+        edit_shot_data = self.new_shot.new_shot_data
+
+        if(old_shot_data["shot_num"] != edit_shot_data["shot_num"]):
+            print("SHOT NUMBER CHANGED!!!!")
+
+        # edit json
+        shot_file_name = os.path.join(shot_dir, "shot_data.json")
+        make_shot.edit_shot_json(shot_file_name, edit_shot_data)
+
+        # update list item data
+        new_shot_data = shot_utils.get_shots(old_shot_data["name"])[0]
+        print("SETTING NEW SHOT DATA", new_shot_data)
+        if(new_shot_data!=0):
+            selected_shot.setData(role_mapping["shot_data"], new_shot_data)
+        else:
+            print("can't find shot")
+
+        # update info pannel
+        self.update_shot_info()
+        print("edit finished")
+
     def on_shot_add_finished(self):
         finished_stats = self.new_shot.finished_status
-        if(finished_stats == 0):
-            self.populate_shot_list()
+        if(finished_stats != 0):
+            return
+        new_shot_data = self.new_shot.new_shot_data
+
+        shot_file_name = self.new_shot.shot_file_name
+        print("creating shot", shot_file_name)
+        make_shot.new_shot(self, shot_file_name, new_shot_data)
+
+        self.populate_shot_list()
 
     def on_shot_delete(self):
         print('shot delete')
