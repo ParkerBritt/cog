@@ -60,7 +60,7 @@ class ShotListWidget(QListWidget):
         if(os.path.exists(scene_path)):
             launch_houdini(scene_path)
         else:
-            print("Error:", shot_data["name"],"has no scene.hipnc file")
+            print("Error:", shot_data["file_name"],"has no scene.hipnc file")
 
 
     def handle_aciton_delete(self):
@@ -90,7 +90,7 @@ class NewShotInterface(QDialog):
         if(self.shot_list and len(self.shot_list.selectedItems())>0):
             print("shot_list", self.shot_list)
             shot_data = get_shot_data(self.shot_list)
-            shot_num = shot_data["num"]
+            shot_num = shot_data["shot_num"]
             if(not self.edit_mode):
                 shot_num+=10
         self.select_shot_num.setRange(1, 9999)
@@ -206,6 +206,7 @@ class ShotPage(QWidget):
 
         # Shot list
         self.shot_list = ShotListWidget()
+        self.shot_list.setSortingEnabled(True)
         self.shot_list.itemSelectionChanged.connect(self.update_shot_info)
         self.shot_list.setAlternatingRowColors(True)
         self.shot_list.setIconSize(QSize(500,50))
@@ -354,26 +355,50 @@ class ShotPage(QWidget):
 
         selected_shot_data = selected_items[0].data(role_mapping["shot_data"])
 
-        self.new_shot = NewShotInterface(self, self.shot_list, edit=True, shot_data=selected_shot_data)
-        self.new_shot.finished.connect(self.on_shot_edit_finished)
-        self.new_shot.exec()
+        self.edit_shot_window = NewShotInterface(self, self.shot_list, edit=True, shot_data=selected_shot_data)
+        self.edit_shot_window.finished.connect(self.on_shot_edit_finished)
+        self.edit_shot_window.exec()
 
     def on_shot_edit_finished(self):
+        # make sure user confirmed edit by pressing ok
+        finished_stats = self.edit_shot_window.finished_status
+        if(finished_stats != 0):
+            return
+
         # setup variables
         selected_shot = self.shot_list.selectedItems()[0]
         old_shot_data = selected_shot.data(role_mapping["shot_data"])
+        print("OLD SHOT DATA", old_shot_data)
         shot_dir = old_shot_data["dir"]
-        edit_shot_data = self.new_shot.new_shot_data
+        shot_name = old_shot_data["file_name"]
+        edit_shot_data = self.edit_shot_window.new_shot_data
 
+
+
+        # move shot
         if(old_shot_data["shot_num"] != edit_shot_data["shot_num"]):
-            print("SHOT NUMBER CHANGED!!!!")
+            print("\n\nSHOT NUMBER CHANGED!!!!")
+            # print(f"old_shot_data: {old_shot_data} \nnew_shot_data: {new_shot_data}")
+            dest_shot_name = "SH"+str(edit_shot_data["shot_num"]).zfill(4)
+            dest_dir = make_shot.move_shot(self, shot_name, dest_shot_name)
+            # check if move was successful
+            if(not dest_dir):
+                edit_shot_data.pop("shot_num")
+                return
+
+            # reformat list widget
+            shot_dir = dest_dir
+            shot_name = os.path.basename(dest_dir)
+            new_shot_data = shot_utils.get_shots(shot_name)[0]
+            selected_shot.setText("Shot " + new_shot_data["formatted_name"])
 
         # edit json
         shot_file_name = os.path.join(shot_dir, "shot_data.json")
-        make_shot.edit_shot_json(shot_file_name, edit_shot_data)
+        new_shot_data = make_shot.edit_shot_json(shot_file_name, edit_shot_data)
+        new_shot_data = shot_utils.get_shots(shot_name)[0]
 
         # update list item data
-        new_shot_data = shot_utils.get_shots(old_shot_data["name"])[0]
+        # self.populate_shot_list()
         print("SETTING NEW SHOT DATA", new_shot_data)
         if(new_shot_data!=0):
             selected_shot.setData(role_mapping["shot_data"], new_shot_data)
@@ -401,16 +426,31 @@ class ShotPage(QWidget):
         quick_dialog(self, "Deleting shots isn't implemented yet")
 
     def populate_shot_list(self):
+        # check for previous selection
+        prev_selected_items = self.shot_list.selectedItems()
+        has_prev_selection = False
+        if(len(prev_selected_items)!=0):
+            prev_selected_text = prev_selected_items[0].text()
+            has_prev_selection = True
+
+        # clear contents
         self.shot_list.clear()
 
+        # create new shots
         self.set_shots()
         for shot in self.shots:
-            # self.shot_list.addItem()
-            item = QListWidgetItem("Shot " + shot["formatted_name"], self.shot_list)
+            item_label = "Shot " + shot["formatted_name"]
+            item = QListWidgetItem(item_label, self.shot_list)
             item.setData(role_mapping["shot_data"], shot)
             thumbnail_path = os.path.join(shot["dir"],"thumbnail.png")
             print("thumbnail path", thumbnail_path)
             item.setIcon(QIcon(thumbnail_path))
+
+            if(has_prev_selection and item_label == prev_selected_text):
+                # print(f"{item_label} == {prev_selected_text}")
+                item.setSelected(True)
+            # elif(has_prev_selection):
+            #     print(f"{item_label} != {prev_selected_text}")
             
             
         # print("shots", shots)

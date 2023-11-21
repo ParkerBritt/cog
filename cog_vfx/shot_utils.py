@@ -12,6 +12,7 @@ def get_shots(shot_name_filter = None):
         if(shot_name_filter in shot_dirs):
             shot_dirs = [shot_dirs[shot_dirs.index(shot_name_filter)]]
         else:
+            print(f"\n\nERROR: {shot_name_filter} not in {shot_dirs}")
             return 0
 
     for i, shot_base_name in enumerate(shot_dirs):
@@ -21,12 +22,6 @@ def get_shots(shot_name_filter = None):
 
         shot_dir = os.path.join(shots_path, shot_base_name)
         current_shot = {}
-        current_shot.update({
-            "name":shot_base_name,
-            "dir":shot_dir,
-            "formatted_name":shot_base_name.split("SH")[1],
-            "num":int(shot_base_name.split("SH")[1]),
-        })
 
         # get json data
         json_path = os.path.join(shot_dir, "shot_data.json")
@@ -41,6 +36,18 @@ def get_shots(shot_name_filter = None):
                     print(f"An unexpected error occurred: {e}")
         else:
             print(f"File not found: {json_path}")
+
+        current_shot.update({
+            # "name":shot_base_name,
+            "dir":shot_dir,
+            "formatted_name":shot_base_name.split("SH")[1],
+            # "num":int(shot_base_name.split("SH")[1]),
+        })
+        if("shot_num" in current_shot):
+            current_shot["file_name"] = "SH"+str(current_shot["shot_num"]).zfill(4)
+        else:
+            current_shot["file_name"] = shot_base_name
+
 
         shots.append(current_shot)
 

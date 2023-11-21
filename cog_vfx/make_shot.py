@@ -1,5 +1,4 @@
-import os, json
-import shutil
+import os, json, shutil
 from . import shot_utils
 from .utils import get_project_root
 from .interface_utils import quick_dialog
@@ -75,6 +74,30 @@ def edit_shot_json(save_path, edit_shot_data):
     json_data = json.dumps(shot_data, indent=4)
     with open(json_save_path, "w") as file:
         file.write(json_data)
+
+    # return updated shot data
+    return shot_data
+
+def move_shot(qt_parent, source_shot_name, dest_shot_name):
+    # find paths
+    root_path = get_project_root()
+    shots_path = os.path.join(root_path, "shots")
+    source_dir = os.path.join(shots_path, source_shot_name)
+    dest_dir = os.path.join(shots_path, dest_shot_name)
+    print(f"moving {source_dir} to {dest_dir}")
+    if(not os.path.exists(source_dir)):
+        print(f"ERROR: source dir: {source_dir} not found")
+        return
+    if(os.path.exists(dest_dir)):
+        quick_dialog(qt_parent, f"ERROR: file {dest_dir} already exists, cancelling shot move", "Can't move Shot")
+        return
+    print("TARGET DIR", source_dir)
+    print("DEST DIR", dest_dir)
+
+    shutil.move(source_dir, dest_dir)
+
+    return dest_dir
+
 
 
 if __name__ == "__main__":
