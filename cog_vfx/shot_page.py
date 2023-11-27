@@ -1,10 +1,10 @@
 import os, json
-from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedLayout, QListWidget, QSizePolicy, QMenu, QSplitter, QListWidgetItem, QSpinBox, QTextEdit, QDialog
+from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedLayout, QListWidget, QSizePolicy, QMenu, QSplitter, QListWidgetItem, QSpinBox, QTextEdit, QDialog, QScrollArea, QProgressBar
 from PySide6.QtGui import QIcon, QFont, QPixmap
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import QSize, Qt, QThread, Signal
 import pkg_resources
 from . import shot_utils, make_shot, utils
-from .houdini_wrapper import launch_houdini
+from .houdini_wrapper import launch_houdini, launch_hython
 from .interface_utils import quick_dialog
 
 role_mapping = {
@@ -27,6 +27,120 @@ def get_shot_data(shot_list=None, item=None):
         selected_shot = item
 
     return selected_shot.data(role_mapping["shot_data"])
+
+
+
+class RenderThread(QThread):
+    progress_update = Signal(int)
+    frame_update = Signal(str)
+    finished = Signal()
+
+    def __init__(self, scene_path, shot_data, render_node_path):
+        super(RenderThread, self).__init__()
+        self.scene_path = scene_path
+        self.shot_data = shot_data
+        self.node_path = render_node_path 
+
+    def run(self):
+        # prepare script to run
+        script = "import sys; module_directory = '{module_directory}';sys.path.append(module_directory); import husk_render; husk_render.exec_render_node('{scene_path}', '{node_path}')"
+        script = script.format(module_directory=get_asset_path(""), scene_path=self.scene_path, node_path=self.node_path)
+
+        self.process = launch_hython(self.scene_path, self.shot_data, script=script, live_mode=True)
+        while True:
+            output = self.process.stdout.readline()
+            # print("output", output)
+            if output == '' and self.process.poll() is not None:
+                break
+            if output.startswith('ALF_PROGRESS'):
+                progress = int(output.strip().split(' ')[1].rstrip('%'))
+                self.progress_update.emit(progress)
+            elif ">>> Render" in output:
+                frame_num = output[-9:-5]
+                print("CURRENT FRAME:", frame_num)
+                self.frame_update.emit(frame_num)
+
+    def terminate_process(self):
+        if self.process:
+            self.process.terminate()
+
+class RenderLoading(QDialog):
+    def __init__(self, parent, scene_path, shot_data, render_node_path):
+        super(RenderLoading, self).__init__(parent)
+        self.scene_path = scene_path
+        self.shot_data = shot_data
+        # self.subprocess_thread = subprocess_thread
+
+        self.initUI()
+        self.subprocess_thread = RenderThread(self.scene_path, self.shot_data, render_node_path)
+        self.subprocess_thread.progress_update.connect(self.updateProgressBar)
+        self.subprocess_thread.frame_update.connect(self.updateFrame)
+        self.subprocess_thread.finished.connect(self.closeDialog)
+        self.subprocess_thread.start()
+
+    def initUI(self):
+        self.progressBar = QProgressBar(self)
+        self.setMaximumSize(400, 50)
+        layout = QVBoxLayout()
+        # layout.addWidget(QLabel("Frame Progress"))
+        self.frame_label = QLabel("Render Setup")
+        layout.addWidget(self.frame_label)
+        layout.addWidget(self.progressBar)
+        self.setLayout(layout)
+        self.setGeometry(300, 300, 250, 150)
+        self.setWindowTitle("Render Progress")
+
+    def updateProgressBar(self, value):
+        self.progressBar.setValue(value)
+
+    def updateFrame(self, value):
+        self.frame_label.setText("Frame: " + value)
+
+    def closeDialog(self):
+        self.close()
+
+    def closeEvent(self, event):
+        self.subprocess_thread.terminate_process()
+        event.accept()
+
+class SelectRenderNodeDialog(QDialog):
+    def __init__(self, parent=None, render_nodes=None, scene_path=None, shot_data=None):
+        super(SelectRenderNodeDialog, self).__init__(parent)
+        self.render_nodes = render_nodes
+        self.scene_path = scene_path
+        self.shot_data = shot_data
+
+        self.setWindowTitle("Select Render Layer")
+        self.initUI()
+
+    def initUI(self):
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
+        self.layout.addWidget(QLabel("Please select the layer you'd like to render"))
+
+        # create layer list
+        self.render_node_list = QListWidget()
+        self.layer_data_role = Qt.UserRole + 1
+        for render_node in self.render_nodes:
+            list_item = QListWidgetItem(render_node["name"])
+            list_item.setData(self.layer_data_role, render_node)
+            self.render_node_list.addItem(list_item)
+        self.layout.addWidget(self.render_node_list)
+
+        self.render_button = QPushButton("render")
+        self.render_button.clicked.connect(self.on_render_button)
+        self.layout.addWidget(self.render_button)
+
+    def on_render_button(self):
+        print("render button clicked")
+        selected_items = self.render_node_list.selectedItems()
+        if(len(selected_items)==0):
+            return
+        sel_layer_path = selected_items[0].data(self.layer_data_role)["node_path"]
+        self.close()
+        render_loading = RenderLoading(self, self.scene_path, self.shot_data, sel_layer_path)
+        render_loading.show()
+
 
 
 
@@ -53,7 +167,9 @@ class ShotListWidget(QListWidget):
             if action == action_open:
                 self.handle_action_open(shot_data)
             elif action == action_delete:
-                self.handle_aciton_delete()
+                self.handle_action_delete()
+            elif action == action_render:
+                self.handle_action_render(shot_data)
 
     def handle_action_open(self, shot_data):
         print("Opening Shot")
@@ -64,8 +180,36 @@ class ShotListWidget(QListWidget):
             print("Error:", shot_data["file_name"],"has no scene.hipnc file")
 
 
-    def handle_aciton_delete(self):
+    def handle_action_delete(self):
         print("Deleting Shot")
+
+    def handle_action_render(self, shot_data):
+        print("Rendering Shot")
+        scene_path = os.path.join(shot_data["dir"],"scene.hipnc")
+        if(os.path.exists(scene_path)):
+            # -- Get Render Nodes --
+            # prepare script to run
+            script = "import sys; module_directory = '{module_directory}';sys.path.append(module_directory); import husk_render; husk_render.get_render_nodes('{scene_path}')"
+            script = script.format(module_directory=get_asset_path(""), scene_path = scene_path)
+            # run script through hython
+            self.get_render_nodes_process = launch_hython(scene_path, shot_data, script=script)
+
+            # extract data from stdout
+            render_nodes = []
+            for stdout_line in self.get_render_nodes_process.stdout.split("\n"):
+                if(stdout_line.startswith("__RETURN_RENDER_NODE:")):
+                    stdout_line_split = stdout_line.split(":")
+                    node_name = stdout_line_split[1]
+                    node_path = stdout_line_split[2]
+                    render_nodes.append({"name":node_name, "node_path":node_path})
+            select_render_node = SelectRenderNodeDialog(self, render_nodes, scene_path, shot_data)
+            select_render_node.show()
+            print(render_nodes)
+            
+            return
+            # launch_hython(scene_path, shot_data, get_asset_path("husk_render.py"))
+        else:
+            print("Error:", shot_data["file_name"],"has no scene.hipnc file")
 
 class NewShotInterface(QDialog):
     def __init__(self, parent=None, shot_list=None, edit=False, shot_data=None):
@@ -83,6 +227,7 @@ class NewShotInterface(QDialog):
 
     def initUI(self):
         self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
 
         # Shot Number
         self.layout.addWidget(QLabel("Shot Number"))
@@ -91,7 +236,7 @@ class NewShotInterface(QDialog):
         if(self.shot_list and len(self.shot_list.selectedItems())>0):
             print("shot_list", self.shot_list)
             shot_data = get_shot_data(self.shot_list)
-            shot_num = shot_data["shot_num"]
+            shot_num = shot_data["shot_num"] if "shot_num" in shot_data else 10
             if(not self.edit_mode):
                 shot_num+=10
         self.select_shot_num.setRange(1, 9999)
@@ -162,8 +307,6 @@ class NewShotInterface(QDialog):
         bottom_buttons_layout.addWidget(cancel_button)
         self.layout.addLayout(bottom_buttons_layout)
 
-        self.setLayout(self.layout)
-
         if(self.existing_shot_data):
             self.fill_existing_values()
 
@@ -176,11 +319,13 @@ class NewShotInterface(QDialog):
         self.fill_value(self.select_fps, "fps")
 
     def fill_value(self, widget, value):
-        if(self.existing_shot_data[value]):
+        if(value in self.existing_shot_data):
             if(isinstance(widget, QTextEdit)):
                 widget.setPlainText(self.existing_shot_data[value])
             elif(isinstance(widget, QSpinBox)):
                 widget.setValue(self.existing_shot_data[value])
+
+    # ----- SIGNALS ------- 
 
     def on_ok_pressed(self):
         print("ok_pressed")
@@ -270,9 +415,34 @@ class ShotPage(QWidget):
         self.shot_central_layout.addLayout(bottom_buttons_layout)
 
     def create_shot_side_panel(self):
-        self.shot_side_widget = QWidget()
-        self.shot_side_widget.setStyleSheet("QWidget {background-color: #1b1e20; border-radius: 15px;}")
-        self.shot_side_layout = QVBoxLayout(self.shot_side_widget)
+        # self.shot_side_widget = QScrollArea()
+        # self.shot_side_widget.setStyleSheet("QWidget {background-color: #1b1e20; border-radius: 15px;}")
+        # self.shot_side_layout = QVBoxLayout(self.shot_side_widget)
+        # self.shot_page_layout.addWidget(self.shot_side_widget)
+
+        self.shot_side_widget = QScrollArea()
+        # self.shot_side_widget.setStyleSheet("QScrollArea {background-color: #1b1e20; border-radius: 15px;}")
+        self.shot_side_widget.setStyleSheet("""
+    QScrollArea {
+        border-radius: 15px;
+    }
+    QScrollArea > QWidget > QWidget {
+        background-color: #1b1e20;
+    }
+    QScrollArea > QWidget > QWidget:disabled {
+        background-color: #1b1e20;
+    }
+""")
+
+
+        # Create a content widget and a layout for it
+        content_widget = QWidget()
+        self.shot_side_layout = QVBoxLayout(content_widget)  # Set the layout to the content widget
+
+        # Then set the content widget to the scroll area
+        self.shot_side_widget.setWidget(content_widget)
+        self.shot_side_widget.setWidgetResizable(True)  # Make the content widget resizable
+
         self.shot_page_layout.addWidget(self.shot_side_widget)
 
         # make font
@@ -451,7 +621,7 @@ class ShotPage(QWidget):
 
 
         # move shot
-        if(old_shot_data["shot_num"] != edit_shot_data["shot_num"]):
+        if(not "shot_num" in old_shot_data or old_shot_data["shot_num"] != edit_shot_data["shot_num"]):
             print("\n\nSHOT NUMBER CHANGED!!!!")
             # print(f"old_shot_data: {old_shot_data} \nnew_shot_data: {new_shot_data}")
             dest_shot_name = "SH"+str(edit_shot_data["shot_num"]).zfill(4)
