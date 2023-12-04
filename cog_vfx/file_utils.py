@@ -78,6 +78,20 @@ def edit_shot_json(save_path, edit_shot_data):
     # return updated shot data
     return shot_data
 
+def edit_asset_json(save_path, edit_shot_data):
+    json_save_path = save_path 
+
+    with open(json_save_path, "r") as file:
+        asset_data = json.load(file)
+    asset_data.update(edit_shot_data)
+
+    json_data = json.dumps(asset_data, indent=4)
+    with open(json_save_path, "w") as file:
+        file.write(json_data)
+
+    # return updated asset data
+    return asset_data
+
 def move_shot(qt_parent, source_shot_name, dest_shot_name):
     # find paths
     root_path = get_project_root()

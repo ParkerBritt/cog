@@ -1,9 +1,9 @@
 import os, json
-from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedLayout, QListWidget, QSizePolicy, QMenu, QSplitter, QListWidgetItem, QSpinBox, QTextEdit, QDialog, QScrollArea, QProgressBar
+from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedLayout, QListWidget, QSizePolicy, QMenu, QSplitter, QListWidgetItem, QSpinBox, QTextEdit, QDialog, QScrollArea, QProgressBar, QLineEdit, QSpacerItem
 from PySide6.QtGui import QIcon, QFont, QPixmap
 from PySide6.QtCore import QSize, Qt, QThread, Signal
 import pkg_resources
-from . import shot_utils, make_shot, utils
+from . import shot_utils, file_utils, utils
 from .houdini_wrapper import launch_houdini, launch_hython
 from .interface_utils import quick_dialog
 
@@ -103,33 +103,76 @@ class RenderLoading(QDialog):
         self.subprocess_thread.terminate_process()
         event.accept()
 
-class SelectRenderNodeDialog(QDialog):
-    def __init__(self, parent=None, render_nodes=None, scene_path=None, shot_data=None):
-        super(SelectRenderNodeDialog, self).__init__(parent)
-        self.render_nodes = render_nodes
+
+class PopulateListThread(QThread):
+    finished = Signal(list)
+
+    def __init__(self, scene_path, shot_data):
+        QThread.__init__(self)
         self.scene_path = scene_path
         self.shot_data = shot_data
 
-        self.setWindowTitle("Select Render Layer")
+    def run(self):
+        script = "import sys; module_directory = '{module_directory}';sys.path.append(module_directory); import husk_render; husk_render.get_render_nodes('{scene_path}')"
+        script = script.format(module_directory=get_asset_path(""), scene_path = self.scene_path)
+        # run script through hython
+        self.get_render_nodes_process = launch_hython(self.scene_path, self.shot_data, script=script, set_vars=False)
+
+        # extract data from stdout
+        render_nodes = []
+        for stdout_line in self.get_render_nodes_process.stdout.split("\n"):
+            if(stdout_line.startswith("__RETURN_RENDER_NODE:")):
+                stdout_line_split = stdout_line.split(":")
+                node_name = stdout_line_split[1]
+                node_path = stdout_line_split[2]
+                render_nodes.append({"name":node_name, "node_path":node_path})
+        print("emmiting", render_nodes)
+        self.finished.emit(render_nodes)
+
+class SelectRenderNodeDialog(QDialog):
+    def __init__(self, parent=None, scene_path=None, shot_data=None):
+        super(SelectRenderNodeDialog, self).__init__(parent)
+        self.scene_path = scene_path
+        self.shot_data = shot_data
+
+        # start thread
+        self.populate_list_thread = PopulateListThread(self.scene_path, self.shot_data)
+        self.populate_list_thread.finished.connect(self.populate_list)
+        self.populate_list_thread.start()
+
         self.initUI()
+
+        self.setWindowTitle("Select Render Layer")
 
     def initUI(self):
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
-        self.layout.addWidget(QLabel("Please select the layer you'd like to render"))
+
+        self.instruction_label = QLabel("Loading...")
+        self.layout.addWidget(self.instruction_label)
 
         # create layer list
         self.render_node_list = QListWidget()
+        self.layout.addWidget(self.render_node_list)
+
+        self.render_button = QPushButton("render")
+        self.render_button.hide()
+        self.render_button.clicked.connect(self.on_render_button)
+        self.layout.addWidget(self.render_button)
+        self.setModal(True)
+        self.show()
+
+    def populate_list(self, render_nodes):
+        print("populating list with", render_nodes)
+        self.render_nodes = render_nodes
         self.layer_data_role = Qt.UserRole + 1
         for render_node in self.render_nodes:
             list_item = QListWidgetItem(render_node["name"])
             list_item.setData(self.layer_data_role, render_node)
             self.render_node_list.addItem(list_item)
-        self.layout.addWidget(self.render_node_list)
 
-        self.render_button = QPushButton("render")
-        self.render_button.clicked.connect(self.on_render_button)
-        self.layout.addWidget(self.render_button)
+        self.instruction_label.setText("Please select the layer you'd like to render")
+        self.render_button.show()
 
     def on_render_button(self):
         print("render button clicked")
@@ -187,24 +230,10 @@ class ShotListWidget(QListWidget):
         print("Rendering Shot")
         scene_path = os.path.join(shot_data["dir"],"scene.hipnc")
         if(os.path.exists(scene_path)):
-            # -- Get Render Nodes --
-            # prepare script to run
-            script = "import sys; module_directory = '{module_directory}';sys.path.append(module_directory); import husk_render; husk_render.get_render_nodes('{scene_path}')"
-            script = script.format(module_directory=get_asset_path(""), scene_path = scene_path)
-            # run script through hython
-            self.get_render_nodes_process = launch_hython(scene_path, shot_data, script=script)
+            select_render_node = SelectRenderNodeDialog(self, scene_path, shot_data)
+            # select_render_node.exec()
+            print("created window")
 
-            # extract data from stdout
-            render_nodes = []
-            for stdout_line in self.get_render_nodes_process.stdout.split("\n"):
-                if(stdout_line.startswith("__RETURN_RENDER_NODE:")):
-                    stdout_line_split = stdout_line.split(":")
-                    node_name = stdout_line_split[1]
-                    node_path = stdout_line_split[2]
-                    render_nodes.append({"name":node_name, "node_path":node_path})
-            select_render_node = SelectRenderNodeDialog(self, render_nodes, scene_path, shot_data)
-            select_render_node.show()
-            print(render_nodes)
             
             return
             # launch_hython(scene_path, shot_data, get_asset_path("husk_render.py"))
@@ -364,6 +393,11 @@ class NewShotInterface(QDialog):
 class ShotPage(QWidget):
     def __init__(self, parent=None):
         super(ShotPage, self).__init__(parent)
+
+        # make font
+        self.header_font = QFont()
+        self.header_font.setPointSize(12)
+
         self.set_shots()
         self.create_shot_page()
 
@@ -380,8 +414,22 @@ class ShotPage(QWidget):
 
         self.create_shot_side_panel()
 
+        # Label
         self.shot_page_label = QLabel("Shots")
+        self.shot_page_label.setFont(self.header_font)
         self.shot_central_layout.addWidget(self.shot_page_label)
+
+        # Search Bar
+        self.shot_search_bar = QLineEdit()
+        self.shot_search_bar.setTextMargins(5, 1, 5, 1)
+        search_bar_font = QFont()
+        search_bar_font.setPointSize(12)
+        self.shot_search_bar.setFont(search_bar_font)
+        self.shot_search_bar.textChanged.connect(self.on_search_changed)
+        self.shot_central_layout.addWidget(self.shot_search_bar)
+        spacer = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Preferred)
+        self.shot_central_layout.addItem(spacer)
+
 
         # Shot list
         self.shot_list = ShotListWidget()
@@ -414,6 +462,14 @@ class ShotPage(QWidget):
 
         self.shot_central_layout.addLayout(bottom_buttons_layout)
 
+    def on_search_changed(self, search_text):
+        for shot_index in range(self.shot_list.count()):
+            shot_item = self.shot_list.item(shot_index)
+            if(not search_text.lower() in shot_item.text().lower()):
+                shot_item.setHidden(True)
+            else:
+                shot_item.setHidden(False)
+
     def create_shot_side_panel(self):
         # self.shot_side_widget = QScrollArea()
         # self.shot_side_widget.setStyleSheet("QWidget {background-color: #1b1e20; border-radius: 15px;}")
@@ -427,6 +483,7 @@ class ShotPage(QWidget):
         border-radius: 15px;
     }
     QScrollArea > QWidget > QWidget {
+        border-radius: 15px;
         background-color: #1b1e20;
     }
     QScrollArea > QWidget > QWidget:disabled {
@@ -445,13 +502,9 @@ class ShotPage(QWidget):
 
         self.shot_page_layout.addWidget(self.shot_side_widget)
 
-        # make font
-        header_font = QFont()
-        header_font.setPointSize(12)
-
         # title
         section_title = QLabel("Shot Info")
-        section_title.setFont(header_font)
+        section_title.setFont(self.header_font)
         # section_title.setMinimumWidth(200)
         self.shot_side_layout.addWidget(section_title)
 
@@ -470,7 +523,7 @@ class ShotPage(QWidget):
         shot_render_data_layout = QVBoxLayout(self.shot_render_data_widget)
         self.shot_side_layout.addWidget(self.shot_render_data_widget)
         general_shot_data_title = QLabel("Render Data")
-        general_shot_data_title.setFont(header_font)
+        general_shot_data_title.setFont(self.header_font)
         shot_render_data_layout.addWidget(general_shot_data_title)
 
         # shot name
@@ -501,7 +554,7 @@ class ShotPage(QWidget):
         self.shot_side_layout.addWidget(self.shot_description_widget)
 
         description_title = QLabel("Shot Description")
-        description_title.setFont(header_font)
+        description_title.setFont(self.header_font)
         self.shot_description_title = description_title
         shot_description_layout.addWidget(self.shot_description_title)
         self.shot_description_label = QLabel("")
@@ -583,7 +636,7 @@ class ShotPage(QWidget):
     #     widget.show()
 
     def on_shot_add(self):
-        # make_shot.new_shot("SH030")
+        # file_utils.new_shot("SH030")
         # self.populate_shot_list()
         print('shot add')
         self.new_shot = NewShotInterface(self, self.shot_list)
@@ -625,7 +678,7 @@ class ShotPage(QWidget):
             print("\n\nSHOT NUMBER CHANGED!!!!")
             # print(f"old_shot_data: {old_shot_data} \nnew_shot_data: {new_shot_data}")
             dest_shot_name = "SH"+str(edit_shot_data["shot_num"]).zfill(4)
-            dest_dir = make_shot.move_shot(self, shot_name, dest_shot_name)
+            dest_dir = file_utils.move_shot(self, shot_name, dest_shot_name)
             # check if move was successful
             if(not dest_dir):
                 edit_shot_data.pop("shot_num")
@@ -639,7 +692,7 @@ class ShotPage(QWidget):
 
         # edit json
         shot_file_name = os.path.join(shot_dir, "shot_data.json")
-        new_shot_data = make_shot.edit_shot_json(shot_file_name, edit_shot_data)
+        new_shot_data = file_utils.edit_shot_json(shot_file_name, edit_shot_data)
         new_shot_data = shot_utils.get_shots(shot_name)[0]
 
         # update list item data
@@ -662,7 +715,7 @@ class ShotPage(QWidget):
 
         shot_file_name = self.new_shot.shot_file_name
         print("creating shot", shot_file_name)
-        make_shot.new_shot(self, shot_file_name, new_shot_data)
+        file_utils.new_shot(self, shot_file_name, new_shot_data)
 
         self.populate_shot_list()
 

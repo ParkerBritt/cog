@@ -44,12 +44,14 @@ def launch_houdini(file_path, shot_data):
     app_path = r'C:\Program Files\Side Effects Software\Houdini 19.5.605\bin\houdini.exe' if platform.system() == 'Windows' else '/opt/hfs19.5.605/bin/houdini'
     launch_application(app_path, file_path)
 
-def launch_hython(file_path, shot_data, script_path=None, script=None, live_mode=False):
-    for key in shot_data:
-        if(key in valid_vars):
-            env[key] = shot_data[key]
+def launch_hython(file_path, shot_data=None, script_path=None, script=None, live_mode=False, set_vars=True):
+    if(set_vars):
+        for key in shot_data:
+            if(key in valid_vars):
+                env[key] = shot_data[key]
 
-    set_environment_variables()
+        set_environment_variables()
+
     app_path = r'C:\Program Files\Side Effects Software\Houdini 19.5.605\bin\hython' if platform.system() == 'Windows' else '/opt/hfs19.5.605/bin/hython'
     if(script_path):
         args = [app_path, script_path, file_path]

@@ -4,6 +4,9 @@
     color: #fff; /* White text */
 }
 
+QLabel {
+    background-color: rgba(255, 255, 255, 0);
+}
 /* Style the buttons */
 QPushButton {
     background-color: #3f4348; /* Darker grey for buttons */
@@ -20,7 +23,16 @@ QPushButton:pressed {
     background-color: #777; /* Even lighter grey when pressed */
 }
 
+QPushButton:checked {
+    background-color: #777; /* Even lighter grey when pressed */
+}
+
 QSpinBox {
+    background-color: #1b1e20;
+}
+
+QLineEdit {
+    border-radius: 8px; /* Rounded corners */
     background-color: #1b1e20;
 }
 
