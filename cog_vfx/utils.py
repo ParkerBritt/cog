@@ -7,7 +7,7 @@ def get_project_root():
 PACKAGE_NAME = "cog_vfx"
 def get_asset_path(path):
     asset_path = pkg_resources.resource_filename(PACKAGE_NAME, path)
-    print("get asset path", asset_path)
+    # print("get asset path", asset_path)
     return asset_path
 
 def get_style_sheet():

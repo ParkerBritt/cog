@@ -9,6 +9,9 @@ def get_render_nodes(scene_path):
             continue
         print("__RETURN_RENDER_NODE:"+stage_node.evalParm("layer_name")+":"+stage_node.path())
 
+    # close hip file
+    hou.hipFile.clear()
+
 def exec_render_node(scene_path, node_path):
 # print("rendering scene:", scene_path)
 # print("args", sys.argv)
@@ -17,4 +20,8 @@ def exec_render_node(scene_path, node_path):
 
     layer_node = hou.node(node_path)
 
+    layer_node.parm("render_context").set(0)
     layer_node.parm("render_usd").pressButton()
+
+    # close hip file
+    hou.hipFile.clear()

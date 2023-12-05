@@ -1,11 +1,13 @@
 import os, json
-from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedLayout, QListWidget, QSizePolicy, QMenu, QSplitter, QListWidgetItem, QSpinBox, QTextEdit, QDialog, QScrollArea, QProgressBar, QLineEdit, QSpacerItem
+from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedLayout, QListWidget, QSizePolicy, QMenu, QSplitter, QListWidgetItem, QSpinBox, QTextEdit, QDialog, QScrollArea, QProgressBar, QLineEdit, QSpacerItem, QTreeWidget, QTreeWidgetItem, QButtonGroup
 from PySide6.QtGui import QIcon, QFont, QPixmap
 from PySide6.QtCore import QSize, Qt, QThread, Signal
 import pkg_resources
 from . import shot_utils, file_utils, utils
 from .houdini_wrapper import launch_houdini, launch_hython
 from .interface_utils import quick_dialog
+
+style_sheet = utils.get_style_sheet()
 
 role_mapping = {
     "shot_data": Qt.UserRole + 1,
@@ -81,14 +83,26 @@ class RenderLoading(QDialog):
     def initUI(self):
         self.progressBar = QProgressBar(self)
         self.setMaximumSize(400, 50)
-        layout = QVBoxLayout()
-        # layout.addWidget(QLabel("Frame Progress"))
+        self.layout = QVBoxLayout()
+
+        # Shot Label
+        print(" \n\n\nSHOT DATA", self.shot_data)
+        self.shot_label = QLabel("Shot: "+self.shot_data['formatted_name'])
+        self.layout.addWidget(self.shot_label)
+
         self.frame_label = QLabel("Render Setup")
-        layout.addWidget(self.frame_label)
-        layout.addWidget(self.progressBar)
-        self.setLayout(layout)
+        self.layout.addWidget(self.frame_label)
+        self.layout.addWidget(self.progressBar)
+        self.setLayout(self.layout)
         self.setGeometry(300, 300, 250, 150)
         self.setWindowTitle("Render Progress")
+
+        self.cancel_button = QPushButton("Cancel")
+        self.cancel_button.clicked.connect(self.on_cancel_button)
+        self.layout.addWidget(self.cancel_button)
+
+    def on_cancel_button(self):
+        self.close()
 
     def updateProgressBar(self, value):
         self.progressBar.setValue(value)
@@ -393,7 +407,7 @@ class NewShotInterface(QDialog):
 class ShotPage(QWidget):
     def __init__(self, parent=None):
         super(ShotPage, self).__init__(parent)
-
+        self.init_icons()
         # make font
         self.header_font = QFont()
         self.header_font.setPointSize(12)
@@ -408,37 +422,203 @@ class ShotPage(QWidget):
     def create_shot_page(self):
         # Create content for Tab 1
         self.shot_page_layout = QHBoxLayout(self)
-        self.shot_central_layout = QVBoxLayout()
 
-        self.shot_page_layout.addLayout(self.shot_central_layout)
+        # Layout
+        self.shot_list_layout_parent = QVBoxLayout()
+        self.shot_page_layout.addLayout(self.shot_list_layout_parent)
+        self.shot_side_layout = QVBoxLayout()
+        self.shot_page_layout.addLayout(self.shot_side_layout)
+        self.files_layout = QVBoxLayout()
+        self.shot_page_layout.addLayout(self.files_layout)
+        # self.role_list_layout_parent = QVBoxLayout()
+        # self.files_layout.addLayout(self.role_list_layout_parent)
+        self.file_tree_layout_parent = QVBoxLayout()
+        self.files_layout.addLayout(self.file_tree_layout_parent)
 
         self.create_shot_side_panel()
+        self.create_shot_list_panel()
+        self.create_role_list_panel()
+        self.create_file_tree_panel()
+        self.populate_file_tree()
+
+    def create_file_tree_panel(self):
+        self.file_tree_widget = QWidget()
+        self.file_tree_layout_parent.addWidget(self.file_tree_widget)
+        self.file_tree_layout = QVBoxLayout(self.file_tree_widget)
+        self.file_tree_widget.setStyleSheet("""
+    QWidget {
+        border-radius: 15px;
+        background-color: #1b1e20;
+    }
+""")
+
+        # Label
+        self.files_page_label = QLabel("Files")
+        self.files_page_label.setFont(self.header_font)
+        self.file_tree_layout.addWidget(self.files_page_label)
+
+        self.role_layout = QHBoxLayout()
+        self.file_tree_layout.addLayout(self.role_layout)
+        self.role_button_group = QButtonGroup()
+        self.create_role_button("FX", "fx")
+        anim_button = self.create_role_button("Anim", "anim")
+        self.create_role_button("Comp", "comp")
+        # default button
+        anim_button.click()
+
+        self.file_tree = QTreeWidget()
+        self.file_tree.setHeaderLabel("")
+        self.file_tree_layout.addWidget(self.file_tree)
+
+    def create_role_button(self, label, role_name):
+        role_button = QPushButton(label)
+        role_button.setStyleSheet(style_sheet)
+        role_button.setCheckable(True)
+        self.role_button_group.addButton(role_button)
+        role_button.clicked.connect(lambda: self.set_selected_role(role_name))
+        self.role_layout.addWidget(role_button)
+        return role_button
+    
+    def set_selected_role(self, role_name):
+        self.selected_role = role_name
+        self.populate_file_tree()
+
+    def init_icons(self):
+        #icons
+        self.icon_file = QIcon(get_asset_path("assets/icons/file_white.png"))
+        self.icon_dir_full = QIcon(get_asset_path("assets/icons/folder_open_white.png"))
+        self.icon_dir_empty = QIcon(get_asset_path("assets/icons/folder_closed_white.png"))
+        self.file_name_icon_mapping = {"anim.mb": QIcon(get_asset_path("assets/icons/animation_white.png")),
+                        "scene.hipnc": QIcon(get_asset_path("assets/icons/scene_white.png")),
+                        }
+        self.file_type_icon_mapping = {"hipnc": QIcon(get_asset_path("assets/icons/houdini_white.png")),
+                          }
+
+    def populate_file_tree(self):
+        self.file_tree.clear()
+
+        # Font
+        tree_font = QFont()
+        tree_font.setPointSize(12)
+
+        # fetch directory path
+        selected_items = self.shot_list.selectedItems()
+        if(len(selected_items)==0):
+            return
+        selected_shot = selected_items[0]
+        sel_shot_data = get_shot_data(item=selected_shot) 
+        directory_path = sel_shot_data["dir"]
+        directory_path += "/"+self.selected_role
+        if(not os.path.exists(directory_path)):
+            raise Exception("ERROR: directory does not exist: "+directory_path)
+            return
+        # whitelist_dirs = ["comp", "fx", "anim"]
+        # whitelist_files = ["scene.hipnc"]
+
+        # walk through files
+        path_to_item = {}
+        for (root, dirs, files) in os.walk(directory_path):
+            # filter top level directories
+            # if(root == directory_path):
+            #     dirs[:] = [d for d in dirs if d in whitelist_dirs]
+            #     files[:] = [f for f in files if f in whitelist_files]
+
+            parent_item = path_to_item.get(root, self.file_tree)
+
+            # handle directories
+            for dir_name in dirs:
+                dir_item = QTreeWidgetItem(parent_item, [dir_name])
+                dir_path = os.path.join(root, dir_name)
+                path_to_item[dir_path] = dir_item
+
+                # font
+                dir_item.setFont(0, tree_font)
+                #icons
+                if(len(os.listdir(dir_path)) == 0):
+                    dir_item.setIcon(0, self.icon_dir_empty)
+                else:
+                    dir_item.setIcon(0, self.icon_dir_full)
+
+            # handle files
+            for file_name in files:
+                file_item = QTreeWidgetItem(parent_item, [file_name])
+
+                # font
+                file_item.setFont(0, tree_font)
+                # icons
+                file_name_split = file_name.split(".")
+                file_type = file_name_split[-1].lower() if len(file_name_split)!=0 else ""
+                if file_name.lower() in self.file_name_icon_mapping:
+                    icon = self.file_name_icon_mapping[file_name.lower()]
+                elif(file_type in self.file_type_icon_mapping):
+                    icon = self.file_type_icon_mapping[file_type]
+                else:
+                    icon = self.icon_file
+                file_item.setIcon(0, icon)
+            # print("root:",root)
+            # print("dirs:", dirs)
+            # print("files:", files)
+
+
+    def create_role_list_panel(self):
+        # Label
+        self.role_list_widget = QWidget()
+        self.role_list_layout = QVBoxLayout(self.role_list_widget)
+        self.role_page_label = QLabel("Roles")
+        self.role_page_label.setFont(self.header_font)
+        self.role_list_layout.addWidget(self.role_page_label)
+
+
+        # Role list
+        self.role_list = QListWidget()
+        self.role_list.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+        self.role_list.setMaximumHeight(self.role_list.minimumSizeHint().height())
+        self.role_list.setSortingEnabled(True)
+        self.role_list.addItem("Anim")
+        self.role_list.addItem("FX")
+        self.role_list.addItem("Stage")
+        # self.role_list.itemSelectionChanged.connect(self.update_role_info)
+        self.role_list.setAlternatingRowColors(True)
+        self.role_list.setIconSize(QSize(500,50))
+        # self.populate_role_list()
+        self.role_list_layout.addWidget(self.role_list)
+
+    def create_shot_list_panel(self):
+        self.shot_list_widget = QWidget()
+        self.shot_list_layout = QVBoxLayout(self.shot_list_widget)
+        self.shot_list_layout_parent.addWidget(self.shot_list_widget)
+        # self.shot_list_widget.setMaximumWidth(self.shot_list_widget.minimumSizeHint().width())
+        self.shot_list_widget.setMinimumWidth(215)
+        self.shot_list_widget.setMaximumWidth(280)
+        print(" MAXIMUM SIZE:", self.shot_list_widget.minimumSizeHint().width())
 
         # Label
         self.shot_page_label = QLabel("Shots")
         self.shot_page_label.setFont(self.header_font)
-        self.shot_central_layout.addWidget(self.shot_page_label)
+        self.shot_list_layout.addWidget(self.shot_page_label)
 
         # Search Bar
         self.shot_search_bar = QLineEdit()
+        # self.shot_search_bar.setMaximumWidth(self.shot_search_bar.minimumSizeHint().width())
         self.shot_search_bar.setTextMargins(5, 1, 5, 1)
         search_bar_font = QFont()
         search_bar_font.setPointSize(12)
         self.shot_search_bar.setFont(search_bar_font)
         self.shot_search_bar.textChanged.connect(self.on_search_changed)
-        self.shot_central_layout.addWidget(self.shot_search_bar)
+        self.shot_list_layout.addWidget(self.shot_search_bar)
         spacer = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Preferred)
-        self.shot_central_layout.addItem(spacer)
+        self.shot_list_layout.addItem(spacer)
 
 
         # Shot list
         self.shot_list = ShotListWidget()
+        # self.shot_list.setMaximumWidth(self.shot_list.minimumSizeHint().width())
         self.shot_list.setSortingEnabled(True)
-        self.shot_list.itemSelectionChanged.connect(self.update_shot_info)
+        self.shot_list.itemSelectionChanged.connect(self.on_shot_selection_changed)
         self.shot_list.setAlternatingRowColors(True)
         self.shot_list.setIconSize(QSize(500,50))
         self.populate_shot_list()
-        self.shot_central_layout.addWidget(self.shot_list)
+        self.shot_list_layout.addWidget(self.shot_list)
 
         # buttons
         bottom_buttons_layout = QHBoxLayout()
@@ -446,7 +626,6 @@ class ShotPage(QWidget):
 
 
         self.shot_refresh_button = QPushButton("Refresh")
-        # self.shot_refresh_button.setMaximumWidth(25)
         self.shot_refresh_button.clicked.connect(self.populate_shot_list)
         bottom_buttons_layout.addWidget(self.shot_refresh_button)
 
@@ -460,7 +639,11 @@ class ShotPage(QWidget):
         self.shot_delete_button.clicked.connect(self.on_shot_delete)
         bottom_buttons_layout.addWidget(self.shot_delete_button)
 
-        self.shot_central_layout.addLayout(bottom_buttons_layout)
+        self.shot_list_layout.addLayout(bottom_buttons_layout)
+
+    def on_shot_selection_changed(self):
+        self.update_shot_info()
+        self.populate_file_tree()
 
     def on_search_changed(self, search_text):
         for shot_index in range(self.shot_list.count()):
@@ -473,7 +656,7 @@ class ShotPage(QWidget):
     def create_shot_side_panel(self):
         # self.shot_side_widget = QScrollArea()
         # self.shot_side_widget.setStyleSheet("QWidget {background-color: #1b1e20; border-radius: 15px;}")
-        # self.shot_side_layout = QVBoxLayout(self.shot_side_widget)
+        # self.shot_side_secondary_layout = QVBoxLayout(self.shot_side_widget)
         # self.shot_page_layout.addWidget(self.shot_side_widget)
 
         self.shot_side_widget = QScrollArea()
@@ -494,7 +677,8 @@ class ShotPage(QWidget):
 
         # Create a content widget and a layout for it
         content_widget = QWidget()
-        self.shot_side_layout = QVBoxLayout(content_widget)  # Set the layout to the content widget
+        self.shot_page_layout.addWidget(content_widget)
+        self.shot_side_secondary_layout = QVBoxLayout(content_widget)  # Set the layout to the content widget
 
         # Then set the content widget to the scroll area
         self.shot_side_widget.setWidget(content_widget)
@@ -506,7 +690,7 @@ class ShotPage(QWidget):
         section_title = QLabel("Shot Info")
         section_title.setFont(self.header_font)
         # section_title.setMinimumWidth(200)
-        self.shot_side_layout.addWidget(section_title)
+        self.shot_side_secondary_layout.addWidget(section_title)
 
 
 
@@ -515,13 +699,13 @@ class ShotPage(QWidget):
         self.shot_thumbnail_size = (192*1.3, 108*1.3)
         print(*self.shot_thumbnail_size)
         self.shot_thumbnail.setMaximumSize(*self.shot_thumbnail_size)
-        self.shot_side_layout.addWidget(self.shot_thumbnail)
+        self.shot_side_secondary_layout.addWidget(self.shot_thumbnail)
 
         # general shot data container
         self.shot_render_data_widget = QWidget()
         self.shot_render_data_widget.setStyleSheet("QWidget {background-color: #2a2e32; border-radius: 15px;}")
         shot_render_data_layout = QVBoxLayout(self.shot_render_data_widget)
-        self.shot_side_layout.addWidget(self.shot_render_data_widget)
+        self.shot_side_secondary_layout.addWidget(self.shot_render_data_widget)
         general_shot_data_title = QLabel("Render Data")
         general_shot_data_title.setFont(self.header_font)
         shot_render_data_layout.addWidget(general_shot_data_title)
@@ -551,7 +735,7 @@ class ShotPage(QWidget):
         self.shot_description_widget = QWidget()
         self.shot_description_widget.setStyleSheet("QWidget {background-color: #2a2e32; border-radius: 15px;}")
         shot_description_layout = QVBoxLayout(self.shot_description_widget)
-        self.shot_side_layout.addWidget(self.shot_description_widget)
+        self.shot_side_secondary_layout.addWidget(self.shot_description_widget)
 
         description_title = QLabel("Shot Description")
         description_title.setFont(self.header_font)
@@ -563,12 +747,12 @@ class ShotPage(QWidget):
         self.shot_description_widget.hide()
 
 
-        self.shot_side_layout.addStretch()
+        self.shot_side_secondary_layout.addStretch()
 
         self.shot_edit_button = QPushButton("Edit")
         self.shot_edit_button.clicked.connect(self.on_shot_edit)
-        self.shot_edit_button.setStyleSheet(utils.get_style_sheet())
-        self.shot_side_layout.addWidget(self.shot_edit_button)
+        self.shot_edit_button.setStyleSheet(style_sheet)
+        self.shot_side_secondary_layout.addWidget(self.shot_edit_button)
 
 
     def update_shot_info(self):
@@ -618,22 +802,6 @@ class ShotPage(QWidget):
             self.shot_description_label.setText(sel_shot_data["description"])
         else:
             self.shot_description_widget.hide()
-
-
-
-    # def update_shot_info_label(self, widget, text, check_values, sel_shot_data):
-    #     set_visible = True
-    #     if(not isinstance(check_values, list)):
-    #         check_values = [check_values]
-    #
-    #     for value in check_values:
-    #         if(not value in sel_shot_data):
-    #             widget.hide()
-    #             return
-    #
-    #     if(isinstance(widget, QLabel)):
-    #         widget.setText(text)
-    #     widget.show()
 
     def on_shot_add(self):
         # file_utils.new_shot("SH030")
@@ -696,7 +864,6 @@ class ShotPage(QWidget):
         new_shot_data = shot_utils.get_shots(shot_name)[0]
 
         # update list item data
-        # self.populate_shot_list()
         print("SETTING NEW SHOT DATA", new_shot_data)
         if(new_shot_data!=0):
             selected_shot.setData(role_mapping["shot_data"], new_shot_data)
@@ -726,10 +893,9 @@ class ShotPage(QWidget):
     def populate_shot_list(self):
         # check for previous selection
         prev_selected_items = self.shot_list.selectedItems()
-        has_prev_selection = False
-        if(len(prev_selected_items)!=0):
+        has_prev_selection = len(prev_selected_items)!=0
+        if(has_prev_selection):
             prev_selected_text = prev_selected_items[0].text()
-            has_prev_selection = True
 
         # clear contents
         self.shot_list.clear()
@@ -741,14 +907,13 @@ class ShotPage(QWidget):
             item = QListWidgetItem(item_label, self.shot_list)
             item.setData(role_mapping["shot_data"], shot)
             thumbnail_path = os.path.join(shot["dir"],"thumbnail.png")
-            print("thumbnail path", thumbnail_path)
+            # print("thumbnail path", thumbnail_path)
             item.setIcon(QIcon(thumbnail_path))
 
             if(has_prev_selection and item_label == prev_selected_text):
-                # print(f"{item_label} == {prev_selected_text}")
                 item.setSelected(True)
-            # elif(has_prev_selection):
-            #     print(f"{item_label} != {prev_selected_text}")
             
+        if(not has_prev_selection):
+            self.shot_list.setCurrentRow(0)
+
             
-        # print("shots", shots)

@@ -528,17 +528,9 @@ class AssetPage(QWidget):
         self.asset_name_label.hide()
         asset_render_data_layout.addWidget(self.asset_name_label)
 
-        # frame range
-        self.asset_frame_range_label = QLabel("")
-        asset_render_data_layout.addWidget(self.asset_frame_range_label)
-
-        # render res
-        self.asset_render_res_label = QLabel("Resolution: 1920x1080")
-        asset_render_data_layout.addWidget(self.asset_render_res_label)
-
-        # render fps
-        self.asset_render_fps_label = QLabel("FPS: 24")
-        asset_render_data_layout.addWidget(self.asset_render_fps_label)
+        # poly_count 
+        self.asset_poly_count_label = QLabel("Poly Count:")
+        asset_render_data_layout.addWidget(self.asset_poly_count_label)
 
         # codec
 
@@ -589,24 +581,11 @@ class AssetPage(QWidget):
         pixmap = pixmap.scaled(QSize(*self.asset_thumbnail_size), Qt.KeepAspectRatioByExpanding, Qt.FastTransformation)
         self.asset_thumbnail.setPixmap(pixmap)
 
-        # frame_range 
-        if("start_frame" in sel_asset_data and "end_frame" in sel_asset_data):
-            self.asset_frame_range_label.show()
-            self.asset_frame_range_label.setText(f'Frame Range: {sel_asset_data["start_frame"]}-{sel_asset_data["end_frame"]}')
+        if("poly_count" in sel_asset_data):
+            self.asset_poly_count_label.setText(f'Poly Count: {sel_asset_data["poly_count"]}')
+            self.asset_poly_count_label.show()
         else:
-            self.asset_frame_range_label.hide()
-
-        if("res_height" in sel_asset_data and "res_width" in sel_asset_data):
-            self.asset_render_res_label.setText(f'Resolution: {sel_asset_data["res_width"]}x{sel_asset_data["res_height"]}')
-            self.asset_render_res_label.show()
-        else:
-            self.asset_render_res_label.hide()
-
-        if("fps" in sel_asset_data):
-            self.asset_render_fps_label.setText(f'Fps: {sel_asset_data["fps"]}')
-            self.asset_render_fps_label.show()
-        else:
-            self.asset_render_fps_label.hide()
+            self.asset_poly_count_label.hide()
 
 
         # asset description
@@ -694,7 +673,6 @@ class AssetPage(QWidget):
         new_asset_data = utils.get_assets(asset_name)[0]
 
         # update list item data
-        # self.populate_asset_list()
         print("SETTING NEW SHOT DATA", new_asset_data)
         if(new_asset_data!=0):
             selected_asset.setData(role_mapping["asset_data"], new_asset_data)
@@ -724,10 +702,9 @@ class AssetPage(QWidget):
     def populate_asset_list(self):
         # check for previous selection
         prev_selected_items = self.asset_list.selectedItems()
-        has_prev_selection = False
-        if(len(prev_selected_items)!=0):
+        has_prev_selection = len(prev_selected_items)!=0
+        if(has_prev_selection):
             prev_selected_text = prev_selected_items[0].text()
-            has_prev_selection = True
 
         # clear contents
         self.asset_list.clear()
@@ -735,21 +712,14 @@ class AssetPage(QWidget):
         # create new assets
         self.set_assets()
         for asset in self.assets:
-            # label
-            asset_type = asset["type"].title() if "type" in asset else "Asset"
-            item_label = asset_type + " " + asset["formatted_name"]
-
+            item_label = "Shot " + asset["formatted_name"]
             item = QListWidgetItem(item_label, self.asset_list)
             item.setData(role_mapping["asset_data"], asset)
             thumbnail_path = os.path.join(asset["dir"],"thumbnail.png")
-            print("thumbnail path", thumbnail_path)
             item.setIcon(QIcon(thumbnail_path))
 
             if(has_prev_selection and item_label == prev_selected_text):
-                # print(f"{item_label} == {prev_selected_text}")
                 item.setSelected(True)
-            # elif(has_prev_selection):
-            #     print(f"{item_label} != {prev_selected_text}")
             
-            
-        # print("assets", assets)
+        if(not has_prev_selection):
+            self.asset_list.setCurrentRow(0)

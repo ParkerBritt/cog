@@ -41,7 +41,7 @@ class MainWindow(QWidget):
         self.tab_hide_button = QPushButton()
         self.tab_hide_button.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
         self.tab_hide_button.setMaximumWidth(8)
-        self.tab_hide_button.setStyleSheet("QPushButton {border-radius: 3px};")
+        self.tab_hide_button.setStyleSheet("QPushButton {border-radius: 4px};")
         self.tab_hide_button.clicked.connect(self.on_tab_hide_button_clicked)
         self.tab_hide_icon_open = QIcon(utils.get_asset_path("assets/icons/left_arrow_simple_white.png"))
         self.tab_hide_icon_closed = QIcon(utils.get_asset_path("assets/icons/right_arrow_simple_white.png"))
@@ -59,12 +59,13 @@ class MainWindow(QWidget):
         self.tab_group.setExclusive(True)
 
         # Create tabs and corresponding content
-        self.create_tab("  Shots", 0,
+        self.shot_tab = self.create_tab("  Shots", 0,
                         utils.get_asset_path('assets/icons/shot_white.png'))
-        self.create_tab("  Assets", 1,
+        self.asset_tab = self.create_tab("  Assets", 1,
                         utils.get_asset_path('assets/icons/sculpture_white.png'))
-        self.create_tab("  Test", 3,
-                        utils.get_asset_path('assets/icons/sculpture_white.png'))
+        self.config_tab = self.create_tab("  Config", 2,
+                        utils.get_asset_path('assets/icons/description_white.png'))
+
         # button padding
         self.sidebar_layout.addStretch()
 
@@ -80,6 +81,10 @@ class MainWindow(QWidget):
         # Add content widgets to the stacked layout
         self.central_stack.addWidget(self.shot_page_widget)
         self.central_stack.addWidget(self.asset_page_widget)
+
+        # Default selection
+        default_tab = self.shot_tab
+        default_tab["button"].click()
 
     def on_tab_hide_button_clicked(self):
         if(self.sidebar_widget.isHidden()):
@@ -103,6 +108,7 @@ class MainWindow(QWidget):
             """QPushButton {
                 padding: 10px;
                 border-radius: 15px;
+                text-align: left;
             }
             QPushButton::text {
                 padding-left: 10px;
@@ -123,6 +129,8 @@ class MainWindow(QWidget):
 
         self.tab_group.addButton(button)
         self.sidebar_layout.addWidget(button)
+
+        return {"button":button, "index": index}
 
 
 
