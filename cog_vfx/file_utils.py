@@ -1,5 +1,8 @@
-import os, json, shutil
-from . import shot_utils
+import os, json, shutil, subprocess, sys
+from PySide6.QtWidgets import (
+        QDialog, QVBoxLayout, QLabel, QApplication, QVBoxLayout, QHBoxLayout, QPushButton,
+        )
+from . import shot_utils, p4utils
 from .utils import get_project_root
 from .interface_utils import quick_dialog
 
@@ -112,7 +115,83 @@ def move_shot(qt_parent, source_shot_name, dest_shot_name):
 
     return dest_dir
 
+# -- update
+class UpdateDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Update")
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
+        self.layout.addWidget(QLabel("New update available, update now?"))
+        
+        # buttons
+        button_layout = QHBoxLayout()
+        self.layout.addLayout(button_layout)
+        update_button = QPushButton("Update")
+        update_button.clicked.connect(lambda: self.make_selection(1))
+        button_layout.addWidget(update_button)
+        
+        cancel_button = QPushButton("Cancel")
+        cancel_button.clicked.connect(lambda: self.make_selection(0))
+        button_layout.addWidget(cancel_button)
+
+    def make_selection(self, selection):
+        self.update_selection = selection
+        self.close()
+
+class UpdateFinishedDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Update")
+        dialog_layout = QVBoxLayout()
+        self.setLayout(dialog_layout)
+        dialog_layout.addWidget(QLabel("Update Finished"))
+        ok_button = QPushButton("Ok")
+        ok_button.clicked.connect(lambda: self.close())
+        dialog_layout.addWidget(ok_button)
+        self.exec()
+
+def software_update(app):
+    dist_dir = "//finalProjectDepot/finalProjectStream/pipeline/packages/2AM/cog/dist/"
+    dist_file_depot = os.path.join(dist_dir, "cog_vfx-0.1.tar.gz")
+    file_info = p4utils.get_file_info(dist_file_depot)[0]
+    # check if update is needed
+    if(not check_updatable(file_info=file_info)):
+        return
+    dist_file = file_info["client_file"]
+
+    # Ask user
+    update_dialog = UpdateDialog()
+    update_dialog.exec()
+    if(not update_dialog.update_selection):
+        return
+
+    print("Installing update")
+    # fetch latest revision
+    p4utils.get_latest(dist_file_depot)
+
+    update_finished_dialog = UpdateFinishedDialog()
+
+    print("dist file", dist_file)
+    subprocess.check_call([sys.executable, "-m", "pip", "install", dist_file])
+    os.execv(sys.executable, ['python'] + sys.argv)
+
+
+def check_updatable(dist_file=None, file_info=None):
+    # if(not os.path.exists(dist_file)):
+    #     raise Exception("Distribution file does not exist: "+dist_file)
+    if(not file_info):
+        file_info = p4utils.get_file_info(dist_file)[0]
+
+    if(file_info["have_rev"] != file_info["head_rev"]):
+        print("Package version out of date, getting latest revision")
+        return True
+
+
+    else:
+        return False
+
 
 
 if __name__ == "__main__":
-    new_shot("SH030")
+    pass
