@@ -5,6 +5,12 @@ from PySide6.QtWidgets import (
 from . import shot_utils, p4utils
 from .utils import get_project_root
 from .interface_utils import quick_dialog
+import pkg_resources
+
+def get_pkg_asset_path(path):
+    PACKAGE_NAME = "cog_vfx"
+    asset_path = pkg_resources.resource_filename(PACKAGE_NAME, path)
+    return asset_path
 
 def new_shot(qt_parent, shot_name, shot_data = None):
     print(f"creating new shot: {shot_name}")

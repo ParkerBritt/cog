@@ -3,7 +3,8 @@ from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, Q
 from PySide6.QtGui import QIcon, QFont, QPixmap
 from PySide6.QtCore import QSize, Qt
 import pkg_resources
-from . import shot_utils, utils
+from . import shot_utils, utils, interface_utils
+from .file_utils import get_pkg_asset_path
 from .shot_page import ShotPage
 from .asset_page import AssetPage
 
@@ -16,7 +17,7 @@ class MainWindow(QWidget):
         super().__init__()
 
         #stylesheet
-        self.setStyleSheet(utils.get_style_sheet())
+        self.setStyleSheet(interface_utils.get_style_sheet())
 
         self.resize(1200,600)
         self.initUI()
@@ -24,7 +25,7 @@ class MainWindow(QWidget):
         self.project_root = utils.get_project_root()
 
     def initUI(self):
-        icon_path = utils.get_asset_path('assets/icons/main_icon.png')
+        icon_path = get_pkg_asset_path('assets/icons/main_icon.png')
         print("icon_path", icon_path)
         self.setWindowIcon(QIcon(icon_path))
         # Main layout
@@ -43,8 +44,8 @@ class MainWindow(QWidget):
         self.tab_hide_button.setMaximumWidth(8)
         self.tab_hide_button.setStyleSheet("QPushButton {border-radius: 4px};")
         self.tab_hide_button.clicked.connect(self.on_tab_hide_button_clicked)
-        self.tab_hide_icon_open = QIcon(utils.get_asset_path("assets/icons/left_arrow_simple_white.png"))
-        self.tab_hide_icon_closed = QIcon(utils.get_asset_path("assets/icons/right_arrow_simple_white.png"))
+        self.tab_hide_icon_open = QIcon(get_pkg_asset_path("assets/icons/left_arrow_simple_white.png"))
+        self.tab_hide_icon_closed = QIcon(get_pkg_asset_path("assets/icons/right_arrow_simple_white.png"))
         self.tab_hide_button.setIconSize(QSize(7,7))
         self.tab_hide_button.setIcon(self.tab_hide_icon_open)
         self.layout.addWidget(self.tab_hide_button)
@@ -60,11 +61,11 @@ class MainWindow(QWidget):
 
         # Create tabs and corresponding content
         self.shot_tab = self.create_tab("  Shots", 0,
-                        utils.get_asset_path('assets/icons/shot_white.png'))
+                        get_pkg_asset_path('assets/icons/shot_white.png'))
         self.asset_tab = self.create_tab("  Assets", 1,
-                        utils.get_asset_path('assets/icons/sculpture_white.png'))
+                        get_pkg_asset_path('assets/icons/sculpture_white.png'))
         self.config_tab = self.create_tab("  Config", 2,
-                        utils.get_asset_path('assets/icons/description_white.png'))
+                        get_pkg_asset_path('assets/icons/description_white.png'))
 
         # button padding
         self.sidebar_layout.addStretch()

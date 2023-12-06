@@ -5,7 +5,7 @@ from PySide6.QtCore import QSize, Qt, QThread, Signal
 import pkg_resources
 from . import file_utils, utils
 from .houdini_wrapper import launch_houdini, launch_hython
-from .interface_utils import quick_dialog
+from .interface_utils import quick_dialog, get_style_sheet
 
 role_mapping = {
     "asset_data": Qt.UserRole + 1,
@@ -556,7 +556,7 @@ class AssetPage(QWidget):
 
         self.asset_edit_button = QPushButton("Edit")
         self.asset_edit_button.clicked.connect(self.on_asset_edit)
-        self.asset_edit_button.setStyleSheet(utils.get_style_sheet())
+        self.asset_edit_button.setStyleSheet(get_style_sheet())
         self.asset_side_layout.addWidget(self.asset_edit_button)
 
 

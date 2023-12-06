@@ -3,19 +3,17 @@ from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, Q
 from PySide6.QtGui import QIcon, QFont, QPixmap
 from PySide6.QtCore import QSize, Qt, QThread, Signal
 import pkg_resources
-from . import shot_utils, file_utils, utils
+from . import shot_utils, file_utils, utils, interface_utils
 from .houdini_wrapper import launch_houdini, launch_hython
 from .interface_utils import quick_dialog
+from .file_utils import get_pkg_asset_path
+from .info_panel import InfoPanel
 
-style_sheet = utils.get_style_sheet()
+style_sheet = interface_utils.get_style_sheet()
 
 role_mapping = {
     "shot_data": Qt.UserRole + 1,
 }
-
-PACKAGE_NAME = "cog_vfx"
-def get_asset_path(path):
-    return pkg_resources.resource_filename(PACKAGE_NAME, path)
 
 def get_shot_data(shot_list=None, item=None):
     shots = shot_utils.get_shots()
@@ -46,7 +44,7 @@ class RenderThread(QThread):
     def run(self):
         # prepare script to run
         script = "import sys; module_directory = '{module_directory}';sys.path.append(module_directory); import husk_render; husk_render.exec_render_node('{scene_path}', '{node_path}')"
-        script = script.format(module_directory=get_asset_path(""), scene_path=self.scene_path, node_path=self.node_path)
+        script = script.format(module_directory=get_pkg_asset_path(""), scene_path=self.scene_path, node_path=self.node_path)
 
         self.process = launch_hython(self.scene_path, self.shot_data, script=script, live_mode=True)
         while True:
@@ -128,7 +126,7 @@ class PopulateListThread(QThread):
 
     def run(self):
         script = "import sys; module_directory = '{module_directory}';sys.path.append(module_directory); import husk_render; husk_render.get_render_nodes('{scene_path}')"
-        script = script.format(module_directory=get_asset_path(""), scene_path = self.scene_path)
+        script = script.format(module_directory=get_pkg_asset_path(""), scene_path = self.scene_path)
         # run script through hython
         self.get_render_nodes_process = launch_hython(self.scene_path, self.shot_data, script=script, set_vars=False)
 
@@ -250,14 +248,13 @@ class ShotListWidget(QListWidget):
 
             
             return
-            # launch_hython(scene_path, shot_data, get_asset_path("husk_render.py"))
+            # launch_hython(scene_path, shot_data, get_pkg_asset_path("husk_render.py"))
         else:
             print("Error:", shot_data["file_name"],"has no scene.hipnc file")
 
 class NewShotInterface(QDialog):
     def __init__(self, parent=None, shot_list=None, edit=False, shot_data=None):
-        super(NewShotInterface, self).__init__(parent)
-        self.setWindowFlags(Qt.Window)
+        super().__init__(parent)
         self.setWindowTitle("New Shot")
         self.resize(400,600)
         self.shot_list = shot_list
@@ -403,6 +400,74 @@ class NewShotInterface(QDialog):
         self.close()
 
 # ------------- SHOT PAGE -----------------
+class ShotListWidget(interface_utils.ObjectSelector):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+
+    def on_object_add(self):
+        # file_utils.new_object("SH030")
+        # self.populate_object_list()
+        print('shot add')
+        self.new_object = NewShotInterface(self, self.object_list)
+        # self.new_object.finished.connect(self.on_object_add_finished)
+        # self.new_object.show()
+        self.new_object.exec()
+
+    def update_object_info(self):
+        # setup
+        selected_items = self.object_list.selectedItems()
+        if(len(selected_items)==0):
+            return
+        selected_shot = selected_items[0]
+        sel_shot_data = get_shot_data(item=selected_shot) 
+        print("sel_shot_data", sel_shot_data)
+        return
+
+        # shot name
+        self.shot_name_label.setText("Shot: " + sel_shot_data["formatted_name"])
+        self.shot_name_label.show()
+
+        # shot thumbnail
+        thumbnail_dir = os.path.join(sel_shot_data["dir"], "thumbnail.png")
+        if(not os.path.exists(thumbnail_dir)):
+            thumbnail_dir = get_pkg_asset_path("assets/icons/missing_shot_thumbnail.png")
+        pixmap = QPixmap(os.path.join(thumbnail_dir))
+        pixmap = pixmap.scaled(QSize(*self.shot_thumbnail_size), Qt.KeepAspectRatioByExpanding, Qt.FastTransformation)
+        self.shot_thumbnail.setPixmap(pixmap)
+
+        # frame_range 
+        if("start_frame" in sel_shot_data and "end_frame" in sel_shot_data):
+            self.shot_frame_range_label.show()
+            self.shot_frame_range_label.setText(f'Frame Range: {sel_shot_data["start_frame"]}-{sel_shot_data["end_frame"]}')
+        else:
+            self.shot_frame_range_label.hide()
+
+        if("res_height" in sel_shot_data and "res_width" in sel_shot_data):
+            self.shot_render_res_label.setText(f'Resolution: {sel_shot_data["res_width"]}x{sel_shot_data["res_height"]}')
+            self.shot_render_res_label.show()
+        else:
+            self.shot_render_res_label.hide()
+
+        if("fps" in sel_shot_data):
+            self.shot_render_fps_label.setText(f'Fps: {sel_shot_data["fps"]}')
+            self.shot_render_fps_label.show()
+        else:
+            self.shot_render_fps_label.hide()
+
+
+        # shot description
+        if("description" in sel_shot_data and sel_shot_data["description"]!=""):
+            self.shot_description_widget.show()
+            self.shot_description_label.setText(sel_shot_data["description"])
+        else:
+            self.shot_description_widget.hide()
+
+class ShotInfoPanel(InfoPanel):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.section_title.setText("Shot Info")
 
 class ShotPage(QWidget):
     def __init__(self, parent=None):
@@ -485,13 +550,13 @@ class ShotPage(QWidget):
 
     def init_icons(self):
         #icons
-        self.icon_file = QIcon(get_asset_path("assets/icons/file_white.png"))
-        self.icon_dir_full = QIcon(get_asset_path("assets/icons/folder_open_white.png"))
-        self.icon_dir_empty = QIcon(get_asset_path("assets/icons/folder_closed_white.png"))
-        self.file_name_icon_mapping = {"anim.mb": QIcon(get_asset_path("assets/icons/animation_white.png")),
-                        "scene.hipnc": QIcon(get_asset_path("assets/icons/scene_white.png")),
+        self.icon_file = QIcon(get_pkg_asset_path("assets/icons/file_white.png"))
+        self.icon_dir_full = QIcon(get_pkg_asset_path("assets/icons/folder_open_white.png"))
+        self.icon_dir_empty = QIcon(get_pkg_asset_path("assets/icons/folder_closed_white.png"))
+        self.file_name_icon_mapping = {"anim.mb": QIcon(get_pkg_asset_path("assets/icons/animation_white.png")),
+                        "scene.hipnc": QIcon(get_pkg_asset_path("assets/icons/scene_white.png")),
                         }
-        self.file_type_icon_mapping = {"hipnc": QIcon(get_asset_path("assets/icons/houdini_white.png")),
+        self.file_type_icon_mapping = {"hipnc": QIcon(get_pkg_asset_path("assets/icons/houdini_white.png")),
                           }
 
     def populate_file_tree(self):
@@ -584,233 +649,18 @@ class ShotPage(QWidget):
         self.role_list_layout.addWidget(self.role_list)
 
     def create_shot_list_panel(self):
-        self.shot_list_widget = QWidget()
-        self.shot_list_layout = QVBoxLayout(self.shot_list_widget)
+        self.shot_list_widget = ShotListWidget()
         self.shot_list_layout_parent.addWidget(self.shot_list_widget)
-        # self.shot_list_widget.setMaximumWidth(self.shot_list_widget.minimumSizeHint().width())
-        self.shot_list_widget.setMinimumWidth(215)
-        self.shot_list_widget.setMaximumWidth(280)
-        print(" MAXIMUM SIZE:", self.shot_list_widget.minimumSizeHint().width())
-
-        # Label
-        self.shot_page_label = QLabel("Shots")
-        self.shot_page_label.setFont(self.header_font)
-        self.shot_list_layout.addWidget(self.shot_page_label)
-
-        # Search Bar
-        self.shot_search_bar = QLineEdit()
-        # self.shot_search_bar.setMaximumWidth(self.shot_search_bar.minimumSizeHint().width())
-        self.shot_search_bar.setTextMargins(5, 1, 5, 1)
-        search_bar_font = QFont()
-        search_bar_font.setPointSize(12)
-        self.shot_search_bar.setFont(search_bar_font)
-        self.shot_search_bar.textChanged.connect(self.on_search_changed)
-        self.shot_list_layout.addWidget(self.shot_search_bar)
-        spacer = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Preferred)
-        self.shot_list_layout.addItem(spacer)
+        self.shot_list = self.shot_list_widget.object_list
 
 
-        # Shot list
-        self.shot_list = ShotListWidget()
-        # self.shot_list.setMaximumWidth(self.shot_list.minimumSizeHint().width())
-        self.shot_list.setSortingEnabled(True)
-        self.shot_list.itemSelectionChanged.connect(self.on_shot_selection_changed)
-        self.shot_list.setAlternatingRowColors(True)
-        self.shot_list.setIconSize(QSize(500,50))
-        self.populate_shot_list()
-        self.shot_list_layout.addWidget(self.shot_list)
-
-        # buttons
-        bottom_buttons_layout = QHBoxLayout()
-        bottom_buttons_layout.addStretch()
-
-
-        self.shot_refresh_button = QPushButton("Refresh")
-        self.shot_refresh_button.clicked.connect(self.populate_shot_list)
-        bottom_buttons_layout.addWidget(self.shot_refresh_button)
-
-        self.shot_add_button = QPushButton("+")
-        self.shot_add_button.setMaximumWidth(25)
-        self.shot_add_button.clicked.connect(self.on_shot_add)
-        bottom_buttons_layout.addWidget(self.shot_add_button)
-
-        self.shot_delete_button = QPushButton("-")
-        self.shot_delete_button.setMaximumWidth(25)
-        self.shot_delete_button.clicked.connect(self.on_shot_delete)
-        bottom_buttons_layout.addWidget(self.shot_delete_button)
-
-        self.shot_list_layout.addLayout(bottom_buttons_layout)
-
-    def on_shot_selection_changed(self):
-        self.update_shot_info()
-        self.populate_file_tree()
-
-    def on_search_changed(self, search_text):
-        for shot_index in range(self.shot_list.count()):
-            shot_item = self.shot_list.item(shot_index)
-            if(not search_text.lower() in shot_item.text().lower()):
-                shot_item.setHidden(True)
-            else:
-                shot_item.setHidden(False)
 
     def create_shot_side_panel(self):
-        # self.shot_side_widget = QScrollArea()
-        # self.shot_side_widget.setStyleSheet("QWidget {background-color: #1b1e20; border-radius: 15px;}")
-        # self.shot_side_secondary_layout = QVBoxLayout(self.shot_side_widget)
-        # self.shot_page_layout.addWidget(self.shot_side_widget)
-
-        self.shot_side_widget = QScrollArea()
-        # self.shot_side_widget.setStyleSheet("QScrollArea {background-color: #1b1e20; border-radius: 15px;}")
-        self.shot_side_widget.setStyleSheet("""
-    QScrollArea {
-        border-radius: 15px;
-    }
-    QScrollArea > QWidget > QWidget {
-        border-radius: 15px;
-        background-color: #1b1e20;
-    }
-    QScrollArea > QWidget > QWidget:disabled {
-        background-color: #1b1e20;
-    }
-""")
-
+        self.shot_side_widget = ShotInfoPanel()
 
         # Create a content widget and a layout for it
-        content_widget = QWidget()
-        self.shot_page_layout.addWidget(content_widget)
-        self.shot_side_secondary_layout = QVBoxLayout(content_widget)  # Set the layout to the content widget
-
-        # Then set the content widget to the scroll area
-        self.shot_side_widget.setWidget(content_widget)
-        self.shot_side_widget.setWidgetResizable(True)  # Make the content widget resizable
-
         self.shot_page_layout.addWidget(self.shot_side_widget)
 
-        # title
-        section_title = QLabel("Shot Info")
-        section_title.setFont(self.header_font)
-        # section_title.setMinimumWidth(200)
-        self.shot_side_secondary_layout.addWidget(section_title)
-
-
-
-        # shot thumbnail
-        self.shot_thumbnail = QLabel()
-        self.shot_thumbnail_size = (192*1.3, 108*1.3)
-        print(*self.shot_thumbnail_size)
-        self.shot_thumbnail.setMaximumSize(*self.shot_thumbnail_size)
-        self.shot_side_secondary_layout.addWidget(self.shot_thumbnail)
-
-        # general shot data container
-        self.shot_render_data_widget = QWidget()
-        self.shot_render_data_widget.setStyleSheet("QWidget {background-color: #2a2e32; border-radius: 15px;}")
-        shot_render_data_layout = QVBoxLayout(self.shot_render_data_widget)
-        self.shot_side_secondary_layout.addWidget(self.shot_render_data_widget)
-        general_shot_data_title = QLabel("Render Data")
-        general_shot_data_title.setFont(self.header_font)
-        shot_render_data_layout.addWidget(general_shot_data_title)
-
-        # shot name
-        self.shot_name_label = QLabel("SH")
-        self.shot_name_label.hide()
-        shot_render_data_layout.addWidget(self.shot_name_label)
-
-        # frame range
-        self.shot_frame_range_label = QLabel("")
-        shot_render_data_layout.addWidget(self.shot_frame_range_label)
-
-        # render res
-        self.shot_render_res_label = QLabel("Resolution: 1920x1080")
-        shot_render_data_layout.addWidget(self.shot_render_res_label)
-
-        # render fps
-        self.shot_render_fps_label = QLabel("FPS: 24")
-        shot_render_data_layout.addWidget(self.shot_render_fps_label)
-
-        # codec
-
-        # date recorded
-
-        # shot description
-        self.shot_description_widget = QWidget()
-        self.shot_description_widget.setStyleSheet("QWidget {background-color: #2a2e32; border-radius: 15px;}")
-        shot_description_layout = QVBoxLayout(self.shot_description_widget)
-        self.shot_side_secondary_layout.addWidget(self.shot_description_widget)
-
-        description_title = QLabel("Shot Description")
-        description_title.setFont(self.header_font)
-        self.shot_description_title = description_title
-        shot_description_layout.addWidget(self.shot_description_title)
-        self.shot_description_label = QLabel("")
-        shot_description_layout.addWidget(self.shot_description_label)
-
-        self.shot_description_widget.hide()
-
-
-        self.shot_side_secondary_layout.addStretch()
-
-        self.shot_edit_button = QPushButton("Edit")
-        self.shot_edit_button.clicked.connect(self.on_shot_edit)
-        self.shot_edit_button.setStyleSheet(style_sheet)
-        self.shot_side_secondary_layout.addWidget(self.shot_edit_button)
-
-
-    def update_shot_info(self):
-        # setup
-        selected_items = self.shot_list.selectedItems()
-        if(len(selected_items)==0):
-            return
-        selected_shot = selected_items[0]
-        sel_shot_data = get_shot_data(item=selected_shot) 
-        print("sel_shot_data", sel_shot_data)
-
-        # shot name
-        self.shot_name_label.setText("Shot: " + sel_shot_data["formatted_name"])
-        self.shot_name_label.show()
-
-        # shot thumbnail
-        thumbnail_dir = os.path.join(sel_shot_data["dir"], "thumbnail.png")
-        if(not os.path.exists(thumbnail_dir)):
-            thumbnail_dir = get_asset_path("assets/icons/missing_shot_thumbnail.png")
-        pixmap = QPixmap(os.path.join(thumbnail_dir))
-        pixmap = pixmap.scaled(QSize(*self.shot_thumbnail_size), Qt.KeepAspectRatioByExpanding, Qt.FastTransformation)
-        self.shot_thumbnail.setPixmap(pixmap)
-
-        # frame_range 
-        if("start_frame" in sel_shot_data and "end_frame" in sel_shot_data):
-            self.shot_frame_range_label.show()
-            self.shot_frame_range_label.setText(f'Frame Range: {sel_shot_data["start_frame"]}-{sel_shot_data["end_frame"]}')
-        else:
-            self.shot_frame_range_label.hide()
-
-        if("res_height" in sel_shot_data and "res_width" in sel_shot_data):
-            self.shot_render_res_label.setText(f'Resolution: {sel_shot_data["res_width"]}x{sel_shot_data["res_height"]}')
-            self.shot_render_res_label.show()
-        else:
-            self.shot_render_res_label.hide()
-
-        if("fps" in sel_shot_data):
-            self.shot_render_fps_label.setText(f'Fps: {sel_shot_data["fps"]}')
-            self.shot_render_fps_label.show()
-        else:
-            self.shot_render_fps_label.hide()
-
-
-        # shot description
-        if("description" in sel_shot_data and sel_shot_data["description"]!=""):
-            self.shot_description_widget.show()
-            self.shot_description_label.setText(sel_shot_data["description"])
-        else:
-            self.shot_description_widget.hide()
-
-    def on_shot_add(self):
-        # file_utils.new_shot("SH030")
-        # self.populate_shot_list()
-        print('shot add')
-        self.new_shot = NewShotInterface(self, self.shot_list)
-        self.new_shot.finished.connect(self.on_shot_add_finished)
-        # self.new_shot.show()
-        self.new_shot.exec()
 
 
     def on_shot_edit(self):
@@ -886,34 +736,6 @@ class ShotPage(QWidget):
 
         self.populate_shot_list()
 
-    def on_shot_delete(self):
-        print('shot delete')
-        quick_dialog(self, "Deleting shots isn't implemented yet")
 
-    def populate_shot_list(self):
-        # check for previous selection
-        prev_selected_items = self.shot_list.selectedItems()
-        has_prev_selection = len(prev_selected_items)!=0
-        if(has_prev_selection):
-            prev_selected_text = prev_selected_items[0].text()
-
-        # clear contents
-        self.shot_list.clear()
-
-        # create new shots
-        self.set_shots()
-        for shot in self.shots:
-            item_label = "Shot " + shot["formatted_name"]
-            item = QListWidgetItem(item_label, self.shot_list)
-            item.setData(role_mapping["shot_data"], shot)
-            thumbnail_path = os.path.join(shot["dir"],"thumbnail.png")
-            # print("thumbnail path", thumbnail_path)
-            item.setIcon(QIcon(thumbnail_path))
-
-            if(has_prev_selection and item_label == prev_selected_text):
-                item.setSelected(True)
-            
-        if(not has_prev_selection):
-            self.shot_list.setCurrentRow(0)
 
             
