@@ -1,4 +1,4 @@
-import os, json, shutil, subprocess, sys
+import os, json, shutil, subprocess, sys, platform
 from PySide6.QtWidgets import (
         QDialog, QVBoxLayout, QLabel, QApplication, QVBoxLayout, QHBoxLayout, QPushButton,
         )
@@ -145,7 +145,7 @@ class UpdateFinishedDialog(QDialog):
         self.setWindowTitle("Update")
         dialog_layout = QVBoxLayout()
         self.setLayout(dialog_layout)
-        dialog_layout.addWidget(QLabel("Update Finished"))
+        dialog_layout.addWidget(QLabel("Starting update\nPress 'ok' to continue"))
         ok_button = QPushButton("Ok")
         ok_button.clicked.connect(lambda: self.close())
         dialog_layout.addWidget(ok_button)
@@ -171,10 +171,17 @@ def software_update(app):
     p4utils.get_latest(dist_file_depot)
 
     update_finished_dialog = UpdateFinishedDialog()
-
+    updater_script_path = p4utils.get_file_info("//finalProjectDepot/finalProjectStream/pipeline/_scripts/updater.py")[0]["client_file"]
+    # updater_script_path = os.path.join(os.getenv("film_root"), os.path.normpath("/pipeline/_scripts/updater.py"))
     print("dist file", dist_file)
-    subprocess.check_call([sys.executable, "-m", "pip", "install", dist_file])
-    os.execv(sys.executable, ['python'] + sys.argv)
+    main_script = sys.argv[0]
+    if platform.system() == 'Windows':
+        main_script+=".exe"
+    subprocess.Popen([sys.executable, updater_script_path, dist_file, main_script])
+    app.quit()
+    exit()
+    # subprocess.check_call([f'"{sys.executable}"', "-m", "pip", "install", f'"{dist_file}"'])
+    # os.execv(sys.executable, ['python'] + sys.argv)
 
 
 def check_updatable(dist_file=None, file_info=None):

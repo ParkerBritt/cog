@@ -1,6 +1,7 @@
 import os, subprocess, platform
 
-valid_vars = ["fps", "res_width", "res_height", "shot_num", "start_frame", "end_frame"]
+shot_vars = ["fps", "res_width", "res_height", "shot_num", "start_frame", "end_frame"]
+asset_vars = ["name", "res_width", "res_height", "shot_num", "start_frame", "end_frame"]
 
 env = {
         "SOME_VARIABLE":"value",
@@ -35,10 +36,14 @@ def launch_application(app_path, file_path):
     print("Launching app:", app_path, "file:", file_path)
     subprocess.Popen([app_path, file_path])
 
-def launch_houdini(file_path, shot_data):
-    for key in shot_data:
+def launch_houdini(file_path, prospective_vars, vars_type=None):
+    if(vars_type=="shot"):
+        valid_vars = shot_vars
+    elif(vars_type=="asset"):
+        valid_vars = asset_vars
+    for key in prospective_vars:
         if(key in valid_vars):
-            env[key] = shot_data[key]
+            env[key] = prospective_vars[key]
 
     set_environment_variables()
     app_path = r'C:\Program Files\Side Effects Software\Houdini 19.5.605\bin\houdini.exe' if platform.system() == 'Windows' else '/opt/hfs19.5.605/bin/houdini'

@@ -232,7 +232,7 @@ class ShotListWidget(QListWidget):
         print("Opening Shot")
         scene_path = os.path.join(shot_data["dir"],"scene.hipnc")
         if(os.path.exists(scene_path)):
-            launch_houdini(scene_path, shot_data)
+            launch_houdini(scene_path, shot_data, "shot")
         else:
             print("Error:", shot_data["file_name"],"has no scene.hipnc file")
 

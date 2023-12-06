@@ -14,6 +14,7 @@ setup(
     install_requires=[
         'PySide6',
         'setuptools',
+        'p4python',
         # Other dependencies...
     ],
     entry_points={

@@ -219,7 +219,7 @@ class AssetListWidget(QListWidget):
         print("Opening Asset")
         look_path = os.path.join(asset_data["dir"],"look", "main", "look.hipnc")
         if(os.path.exists(look_path)):
-            launch_houdini(look_path, asset_data)
+            launch_houdini(look_path, asset_data, "asset")
         else:
             print("Error:", asset_data["file_name"],"has no look.hipnc file")
 

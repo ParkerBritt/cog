@@ -23,6 +23,13 @@ QPushButton:pressed {
     background-color: #777; /* Even lighter grey when pressed */
 }
 
+QHeaderView::section {
+    background-color: #3f4348; /* Darker grey, consistent with QPushButton */
+    color: #fff; /* White text */
+    padding: 3px; /* Padding for header */
+    border-radius: 4px; /* Slightly rounded corners for the header */
+}
+
 QPushButton:checked {
     background-color: #777; /* Even lighter grey when pressed */
 }
