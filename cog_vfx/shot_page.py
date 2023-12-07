@@ -199,9 +199,9 @@ class SelectRenderNodeDialog(QDialog):
 
 
 
-class ShotListWidget(QListWidget):
-    def __init__(self, parent=None):
-        super(ShotListWidget, self).__init__(parent)
+class Old_ShotListWidget(QListWidget):
+    def __init__(self, tree_widget=None, info_widget=None, parent=None):
+        super().__init__(tree_widget, info_widget, parent)
 
     def contextMenuEvent(self, event):
         contextMenu = QMenu(self)
@@ -401,8 +401,8 @@ class NewShotInterface(QDialog):
 
 # ------------- SHOT PAGE -----------------
 class ShotListWidget(interface_utils.ObjectSelector):
-    def __init__(self, parent=None):
-        super().__init__(parent)
+    def __init__(self, tree_widget=None, info_widget=None, parent=None):
+        super().__init__(tree_widget, info_widget, parent)
 
 
     def on_object_add(self):
@@ -414,54 +414,7 @@ class ShotListWidget(interface_utils.ObjectSelector):
         # self.new_object.show()
         self.new_object.exec()
 
-    def update_object_info(self):
-        # setup
-        selected_items = self.object_list.selectedItems()
-        if(len(selected_items)==0):
-            return
-        selected_shot = selected_items[0]
-        sel_shot_data = get_shot_data(item=selected_shot) 
-        print("sel_shot_data", sel_shot_data)
-        return
 
-        # shot name
-        self.shot_name_label.setText("Shot: " + sel_shot_data["formatted_name"])
-        self.shot_name_label.show()
-
-        # shot thumbnail
-        thumbnail_dir = os.path.join(sel_shot_data["dir"], "thumbnail.png")
-        if(not os.path.exists(thumbnail_dir)):
-            thumbnail_dir = get_pkg_asset_path("assets/icons/missing_shot_thumbnail.png")
-        pixmap = QPixmap(os.path.join(thumbnail_dir))
-        pixmap = pixmap.scaled(QSize(*self.shot_thumbnail_size), Qt.KeepAspectRatioByExpanding, Qt.FastTransformation)
-        self.shot_thumbnail.setPixmap(pixmap)
-
-        # frame_range 
-        if("start_frame" in sel_shot_data and "end_frame" in sel_shot_data):
-            self.shot_frame_range_label.show()
-            self.shot_frame_range_label.setText(f'Frame Range: {sel_shot_data["start_frame"]}-{sel_shot_data["end_frame"]}')
-        else:
-            self.shot_frame_range_label.hide()
-
-        if("res_height" in sel_shot_data and "res_width" in sel_shot_data):
-            self.shot_render_res_label.setText(f'Resolution: {sel_shot_data["res_width"]}x{sel_shot_data["res_height"]}')
-            self.shot_render_res_label.show()
-        else:
-            self.shot_render_res_label.hide()
-
-        if("fps" in sel_shot_data):
-            self.shot_render_fps_label.setText(f'Fps: {sel_shot_data["fps"]}')
-            self.shot_render_fps_label.show()
-        else:
-            self.shot_render_fps_label.hide()
-
-
-        # shot description
-        if("description" in sel_shot_data and sel_shot_data["description"]!=""):
-            self.shot_description_widget.show()
-            self.shot_description_label.setText(sel_shot_data["description"])
-        else:
-            self.shot_description_widget.hide()
 
 class ShotInfoPanel(InfoPanel):
     def __init__(self, parent=None):
@@ -480,14 +433,62 @@ class ShotInfoPanel(InfoPanel):
 
         # render data section
         self.render_data_section = self.new_section("Render Data")
-        self.shot_num = self.render_data_section.add_label("SH: 0000")
-        self.frame_range = self.render_data_section.add_label("Frame Range: 1001 - 1100")
+        self.shot_num = self.render_data_section.add_label("SH: {shot_num}")
+        self.frame_range = self.render_data_section.add_label("Frame Range: {start_frame} - {end_frame}")
         self.render_res = self.render_data_section.add_label("Resolution: 1920x1080")
-        self.render_fps = self.render_data_section.add_label("FPS: 24")
+        self.render_fps = self.render_data_section.add_label("FPS: {fps}")
 
         # description section
         self.description_section = self.new_section("Description")
-        self.description_label = self.description_section.add_label("my test description")
+        self.description_label = self.description_section.add_label("{description}")
+        # self.update_sections({"{shot_num}":"hello"})
+
+    def update(self, list_item):
+        print("UPDATING")
+        # setup
+        selected_items = list_item.selectedItems()
+        if(len(selected_items)==0):
+            return
+        selected_shot = selected_items[0]
+        sel_shot_data = get_shot_data(item=selected_shot) 
+        print("sel_shot_data", sel_shot_data)
+
+        data = ["start_frame", "end_frame", "fps", "shot_num", "description"]
+        available_data = []
+        mapped_data = {}
+        for d in data:
+            if(not d in sel_shot_data):
+                continue
+            mapped_data.update({"{"+d+"}":str(sel_shot_data[d])})
+            # available_data.append(d)
+
+        self.update_sections(mapped_data)
+        print(mapped_data)
+        return
+        #
+        # # shot name
+        # self.shot_name_label.setText("Shot: " + sel_shot_data["formatted_name"])
+        # self.shot_name_label.show()
+        #
+        # # shot thumbnail
+        # thumbnail_dir = os.path.join(sel_shot_data["dir"], "thumbnail.png")
+        # if(not os.path.exists(thumbnail_dir)):
+        #     thumbnail_dir = get_pkg_asset_path("assets/icons/missing_shot_thumbnail.png")
+        #
+        # # frame_range 
+        # if("start_frame" in sel_shot_data and "end_frame" in sel_shot_data):
+        #     self.shot_frame_range_label.show()
+        #     self.shot_frame_range_label.setText(f'Frame Range: {sel_shot_data["start_frame"]}-{sel_shot_data["end_frame"]}')
+        # else:
+        #     self.shot_frame_range_label.hide()
+        #
+        # if("res_height" in sel_shot_data and "res_width" in sel_shot_data):
+        #
+        # if("fps" in sel_shot_data):
+        #
+        #
+        # # shot description
+        # if("description" in sel_shot_data and sel_shot_data["description"]!=""):
 
 class ShotPage(QWidget):
     def __init__(self, parent=None):
@@ -669,7 +670,7 @@ class ShotPage(QWidget):
         self.role_list_layout.addWidget(self.role_list)
 
     def create_shot_list_panel(self):
-        self.shot_list_widget = ShotListWidget()
+        self.shot_list_widget = ShotListWidget(info_widget=self.shot_side_widget)
         self.shot_list_layout_parent.addWidget(self.shot_list_widget)
         self.shot_list = self.shot_list_widget.object_list
 

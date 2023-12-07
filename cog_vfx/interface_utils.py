@@ -27,7 +27,7 @@ role_mapping = {
 # -- Object Selector -- 
 
 class ObjectSelector(QWidget):
-    def __init__(self, parent=None, tree_widget = None, info_widget = None):
+    def __init__(self, tree_widget = None, info_widget = None, parent=None):
         super().__init__(parent)
         # assign argument variables
         self.tree_widget = tree_widget
@@ -100,8 +100,10 @@ class ObjectSelector(QWidget):
                 object_item.setHidden(False)
 
     def on_object_selection_changed(self):
+        print("object selection changed")
         if(self.info_widget):
-            self.update_object_info()
+            print("info widget found")
+            self.info_widget.update(self.object_list)
         if(self.tree_widget):
             self.populate_file_tree()
 

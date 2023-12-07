@@ -1,4 +1,4 @@
-import os
+import os, re
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QWidget, QHBoxLayout, QPushButton, QLineEdit, QSpacerItem, QSizePolicy, QListWidget, QListWidgetItem, QSpinBox, QTextEdit, QScrollArea
 from PySide6.QtGui import QIcon, QFont, QPixmap
 from PySide6.QtCore import QSize, Qt
@@ -39,6 +39,8 @@ class InfoPanel(QScrollArea):
         # make the content widget resizable
         self.setWidgetResizable(True)
 
+        self.sections = []
+
 
         # title
         self.title = QLabel("Info")
@@ -48,6 +50,10 @@ class InfoPanel(QScrollArea):
         # general shot data container
         self.shot_render_data_widget = QWidget()
         self.shot_render_data_widget.setStyleSheet("QWidget {background-color: #2a2e32; border-radius: 15px;}")
+
+    def update_sections(self, update_data):
+        for section in self.sections:
+            section.update_data(update_data)
 
     def new_thumbnail(self, thumbnail_path=None, thumbnail_size=None):
         # thumbnail = self.new_section()
@@ -63,6 +69,7 @@ class InfoPanel(QScrollArea):
     def new_section(self, section_title=None):
         # section_background.hide()
         new_section = InfoSection(self, section_title)
+        self.sections.append(new_section)
         return new_section
 
     def on_shot_edit(self):
@@ -108,6 +115,8 @@ class InfoSection():
             section_layout = QVBoxLayout(section_background)
             # info_panel.layout.insertWidget(info_panel.layout.count()-2, section_background)
             info_panel.layout.addWidget(section_background)
+            
+            self.labels = []
 
             if(section_title):
                 # section title
@@ -118,9 +127,48 @@ class InfoSection():
             self.section_background = section_background
             self.section_layout = section_layout
 
+    def update_data(self, update_data):
+        # go through each label and replace placeholders with mapped values
+        has_visible_labels = False
+        for label in self.labels:
+            # get label object
+            label_object = label["object"]
+            # make sure the label has placeholders to replace
+            if(not label["has_placeholder"]):
+                label_object.hide()
+                continue
+            label_text = label["text"]
+
+            found_placeholder = False
+            for placeholder in label["placeholders"]:
+                if(not placeholder in update_data):
+                    continue
+                found_placeholder = True
+                print("replacing", placeholder, "with", update_data[placeholder])
+                label_text = label_text.replace(placeholder, update_data[placeholder])
+            if(not found_placeholder):
+                label_object.hide()
+                continue
+            has_visible_labels = True
+            label_object.setText(label_text)
+            label_object.show()
+        if(not has_visible_labels):
+            self.section_background.hide()
+        else:
+            self.section_background.show()
+
+
     def add_label(self, label_text=""):
            new_label = QLabel(label_text)
            self.section_layout.addWidget(new_label)
+           placeholders = re.findall(r"\{.*?\}", label_text)
+           has_placeholder = len(placeholders)!=0
+           label_data = {"object":new_label,
+                               "text":label_text,
+                               "has_placeholder":has_placeholder,
+                               }
+           if has_placeholder: label_data.update({"placeholders":placeholders})
+           self.labels.append(label_data)
            return new_label
 
     def add_thumbnail(self, thumbnail_path=None, thumbnail_size=None):
