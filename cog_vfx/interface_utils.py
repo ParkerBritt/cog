@@ -5,6 +5,14 @@ from PySide6.QtCore import QSize, Qt
 from . import shot_utils, file_utils
 
 # -- misc small utils -- 
+def data_from_list_widget(list_widget):
+    selected_items = list_widget.selectedItems()
+    if(len(selected_items)==0):
+        return
+    selected_item = selected_items[0]
+    sel_object_data =  selected_item.data(Qt.UserRole+1)
+    return sel_object_data
+
 def get_style_sheet():
     stylesheet_path = file_utils.get_pkg_asset_path("assets/style/style.css")
     with open(stylesheet_path, "r") as file:
@@ -100,9 +108,7 @@ class ObjectSelector(QWidget):
                 object_item.setHidden(False)
 
     def on_object_selection_changed(self):
-        print("object selection changed")
         if(self.info_widget):
-            print("info widget found")
             self.info_widget.update(self.object_list)
         if(self.tree_widget):
             self.populate_file_tree()

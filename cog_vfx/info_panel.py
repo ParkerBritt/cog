@@ -2,16 +2,20 @@ import os, re
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QWidget, QHBoxLayout, QPushButton, QLineEdit, QSpacerItem, QSizePolicy, QListWidget, QListWidgetItem, QSpinBox, QTextEdit, QScrollArea
 from PySide6.QtGui import QIcon, QFont, QPixmap
 from PySide6.QtCore import QSize, Qt
-from . import shot_utils, file_utils, interface_utils
+from . import shot_utils, file_utils, interface_utils, fonts
 
 # -- info panel --
 class InfoPanel(QScrollArea):
     def __init__(self, parent=None):
         super().__init__(parent)
-        # make font
+        
+        # init vars
+        self.update_data = []
+        self.update_data_mapping = None
         self.style_sheet = interface_utils.get_style_sheet()
-        self.header_font = QFont()
-        self.header_font.setPointSize(12)
+        self.fonts = fonts.get_fonts()
+
+        # init ui
         self.init_ui()
 
     def init_ui(self):
@@ -44,7 +48,7 @@ class InfoPanel(QScrollArea):
 
         # title
         self.title = QLabel("Info")
-        self.title.setFont(self.header_font)
+        self.title.setFont(self.fonts["header"])
         self.layout.addWidget(self.title)
 
         # general shot data container
@@ -62,8 +66,8 @@ class InfoPanel(QScrollArea):
         # self.layout.addWidget(thumbnail)
 
         thumbnail_section = InfoSection(self)
-        thumbnail_section.add_thumbnail(thumbnail_path, thumbnail_size) 
-        return thumbnail_section
+        thumbnail =  thumbnail_section.add_thumbnail(thumbnail_path, thumbnail_size) 
+        return thumbnail_section, thumbnail
 
 
     def new_section(self, section_title=None):
@@ -72,17 +76,47 @@ class InfoPanel(QScrollArea):
         self.sections.append(new_section)
         return new_section
 
-    def on_shot_edit(self):
+    def on_object_edit(self):
         pass
 
     def create_bottom_buttons(self):            
         self.layout.addStretch()
 
         # edit button
-        self.shot_edit_button = QPushButton("Edit")
-        self.shot_edit_button.clicked.connect(self.on_shot_edit)
-        self.shot_edit_button.setStyleSheet(self.style_sheet)
-        self.layout.addWidget(self.shot_edit_button)
+        self.object_edit_button = QPushButton("Edit")
+        self.object_edit_button.clicked.connect(self.on_object_edit)
+        self.object_edit_button.setStyleSheet(self.style_sheet)
+        self.layout.addWidget(self.object_edit_button)
+
+    def update(self, list_widget):
+        # setup
+        # selected_items = list_widget.selectedItems()
+        # if(len(selected_items)==0):
+        #     return
+        # selected_item = selected_items[0]
+        # sel_object_data =  selected_item.data(Qt.UserRole+1)
+        sel_object_data = interface_utils.data_from_list_widget(list_widget)
+
+        # sel_object_data = get_object_data(item=selected_object) 
+        print("sel_object_data", sel_object_data)
+
+        # if data exists in selected object then pair the placeholder and the new value
+        data = self.update_data
+        mapped_data = {}
+        # data key would look something like "fps" or "asset_name". Then {fps} will be replaced in the label
+        for data_key in data:
+            # print("data key", data_key)
+            if(not data_key in sel_object_data or sel_object_data[data_key] == ""):
+                continue
+            mapped_data.update({"{"+data_key+"}":str(sel_object_data[data_key])})
+
+        # allows additional data to be mapped by defining the self.update_data_mapping variable
+        # for example a value of {"{test}":"hello"} will update labels with {test} to the mapped value
+        if(self.update_data_mapping):
+            mapped_data.update(self.update_data_mapping)
+
+        self.update_sections(mapped_data)
+
 
 class Thumbnail(QLabel):
     def __init__(self, thumbnail_path=None, thumbnail_size=None, parent=None):
@@ -116,43 +150,46 @@ class InfoSection():
             # info_panel.layout.insertWidget(info_panel.layout.count()-2, section_background)
             info_panel.layout.addWidget(section_background)
             
-            self.labels = []
+            self.section_widgets = []
 
             if(section_title):
                 # section title
                 self.section_title = QLabel(section_title)
-                self.section_title.setFont(info_panel.header_font)
+                self.section_title.setFont(info_panel.fonts["header"])
                 section_layout.addWidget(self.section_title)
 
             self.section_background = section_background
             self.section_layout = section_layout
 
     def update_data(self, update_data):
-        # go through each label and replace placeholders with mapped values
-        has_visible_labels = False
-        for label in self.labels:
-            # get label object
-            label_object = label["object"]
-            # make sure the label has placeholders to replace
-            if(not label["has_placeholder"]):
-                label_object.hide()
-                continue
-            label_text = label["text"]
-
-            found_placeholder = False
-            for placeholder in label["placeholders"]:
-                if(not placeholder in update_data):
+        # go through each widget and replace placeholders with mapped values
+        has_visible_widgets = False
+        for widget in self.section_widgets:
+            # handle widget widgets
+            if(widget["type"]=="label"):
+                # get widget object
+                widget_object = widget["object"]
+                # make sure the widget has placeholders to replace
+                if(not widget["has_placeholder"]):
+                    widget_object.hide()
                     continue
-                found_placeholder = True
-                print("replacing", placeholder, "with", update_data[placeholder])
-                label_text = label_text.replace(placeholder, update_data[placeholder])
-            if(not found_placeholder):
-                label_object.hide()
-                continue
-            has_visible_labels = True
-            label_object.setText(label_text)
-            label_object.show()
-        if(not has_visible_labels):
+                widget_text = widget["text"]
+
+                found_placeholder = False
+                for placeholder in widget["placeholders"]:
+                    if(not placeholder in update_data):
+                        continue
+                    found_placeholder = True
+                    # print("replacing", placeholder, "with", update_data[placeholder])
+                    widget_text = widget_text.replace(placeholder, update_data[placeholder])
+                if(not found_placeholder):
+                    widget_object.hide()
+                    continue
+                has_visible_widgets = True
+                widget_object.setText(widget_text)
+                widget_object.show()
+
+        if(not has_visible_widgets):
             self.section_background.hide()
         else:
             self.section_background.show()
@@ -164,25 +201,47 @@ class InfoSection():
            placeholders = re.findall(r"\{.*?\}", label_text)
            has_placeholder = len(placeholders)!=0
            label_data = {"object":new_label,
-                               "text":label_text,
-                               "has_placeholder":has_placeholder,
-                               }
+                         "text":label_text,
+                         "has_placeholder":has_placeholder,
+                         "type":"label",
+                         }
            if has_placeholder: label_data.update({"placeholders":placeholders})
-           self.labels.append(label_data)
+           self.section_widgets.append(label_data)
            return new_label
 
     def add_thumbnail(self, thumbnail_path=None, thumbnail_size=None):
-        thumbnail = self.add_label()
+        # create widget
+        thumbnail = Thumbnail(thumbnail_path, thumbnail_size)
+        self.section_layout.addWidget(thumbnail)
+
+        return thumbnail
+
+
+class Thumbnail(QLabel):
+    def __init__(self, thumbnail_path=None, thumbnail_size=None):
+        super().__init__()
+
+        # thumbnail size
         if(thumbnail_size is None):
             thumbnail_size = (192*1.3, 108*1.3)
         self.thumbnail_size = thumbnail_size
 
-        self.thumbnail = thumbnail
 
+        # set thumbnail
         if(thumbnail_path):
-            self.set_thumbnail(thumbnail_path)
+            self.set_image(thumbnail_path)
 
-    def set_thumbnail(self, image_path):
+    def set_image(self, image_path):
+        # convert list widget to image path
+        if(isinstance(image_path, QListWidget)):
+            object_data = interface_utils.data_from_list_widget(image_path)
+            if(not "dir" in object_data):
+                return
+            image_path = os.path.join(object_data["dir"], "thumbnail.png")
+
+        if(not os.path.exists(image_path)):
+            print("thumbnail path does not exist:", image_path)
         pixmap = QPixmap(image_path)
         pixmap = pixmap.scaled(QSize(*self.thumbnail_size), Qt.KeepAspectRatioByExpanding, Qt.FastTransformation)
-        self.thumbnail.setPixmap(pixmap)
+        self.setPixmap(pixmap)
+        

@@ -30,6 +30,7 @@ def get_shot_data(shot_list=None, item=None):
 
 
 
+
 class RenderThread(QThread):
     progress_update = Signal(int)
     frame_update = Signal(str)
@@ -422,6 +423,9 @@ class ShotInfoPanel(InfoPanel):
         # title
         self.title.setText("Shot Info")
 
+        self.update_data = ["start_frame", "end_frame", "fps", "shot_num", "description", "resolution"]
+        self.update_data_mapping = None
+
         # create sections
         self.create_sections()
         self.create_bottom_buttons()
@@ -429,66 +433,26 @@ class ShotInfoPanel(InfoPanel):
     def create_sections(self):
         # thumbnail
         thumbnail_dir = get_pkg_asset_path("assets/icons/missing_shot_thumbnail.png")
-        self.new_thumbnail(thumbnail_dir)
+        _, self.shot_thumbnail = self.new_thumbnail(thumbnail_dir)
 
         # render data section
         self.render_data_section = self.new_section("Render Data")
         self.shot_num = self.render_data_section.add_label("SH: {shot_num}")
         self.frame_range = self.render_data_section.add_label("Frame Range: {start_frame} - {end_frame}")
-        self.render_res = self.render_data_section.add_label("Resolution: 1920x1080")
+        self.render_res = self.render_data_section.add_label("Resolution: {resolution}")
         self.render_fps = self.render_data_section.add_label("FPS: {fps}")
+        self.render_fps = self.render_data_section.add_label("test: {test}")
 
         # description section
         self.description_section = self.new_section("Description")
         self.description_label = self.description_section.add_label("{description}")
         # self.update_sections({"{shot_num}":"hello"})
 
-    def update(self, list_item):
-        print("UPDATING")
-        # setup
-        selected_items = list_item.selectedItems()
-        if(len(selected_items)==0):
-            return
-        selected_shot = selected_items[0]
-        sel_shot_data = get_shot_data(item=selected_shot) 
-        print("sel_shot_data", sel_shot_data)
+    def update(self, list_widget):
+        super().update(list_widget)
+        self.shot_thumbnail.set_image(list_widget)
 
-        data = ["start_frame", "end_frame", "fps", "shot_num", "description"]
-        available_data = []
-        mapped_data = {}
-        for d in data:
-            if(not d in sel_shot_data):
-                continue
-            mapped_data.update({"{"+d+"}":str(sel_shot_data[d])})
-            # available_data.append(d)
 
-        self.update_sections(mapped_data)
-        print(mapped_data)
-        return
-        #
-        # # shot name
-        # self.shot_name_label.setText("Shot: " + sel_shot_data["formatted_name"])
-        # self.shot_name_label.show()
-        #
-        # # shot thumbnail
-        # thumbnail_dir = os.path.join(sel_shot_data["dir"], "thumbnail.png")
-        # if(not os.path.exists(thumbnail_dir)):
-        #     thumbnail_dir = get_pkg_asset_path("assets/icons/missing_shot_thumbnail.png")
-        #
-        # # frame_range 
-        # if("start_frame" in sel_shot_data and "end_frame" in sel_shot_data):
-        #     self.shot_frame_range_label.show()
-        #     self.shot_frame_range_label.setText(f'Frame Range: {sel_shot_data["start_frame"]}-{sel_shot_data["end_frame"]}')
-        # else:
-        #     self.shot_frame_range_label.hide()
-        #
-        # if("res_height" in sel_shot_data and "res_width" in sel_shot_data):
-        #
-        # if("fps" in sel_shot_data):
-        #
-        #
-        # # shot description
-        # if("description" in sel_shot_data and sel_shot_data["description"]!=""):
 
 class ShotPage(QWidget):
     def __init__(self, parent=None):
