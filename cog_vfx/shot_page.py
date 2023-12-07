@@ -466,8 +466,28 @@ class ShotListWidget(interface_utils.ObjectSelector):
 class ShotInfoPanel(InfoPanel):
     def __init__(self, parent=None):
         super().__init__(parent)
+        # title
+        self.title.setText("Shot Info")
 
-        self.section_title.setText("Shot Info")
+        # create sections
+        self.create_sections()
+        self.create_bottom_buttons()
+
+    def create_sections(self):
+        # thumbnail
+        thumbnail_dir = get_pkg_asset_path("assets/icons/missing_shot_thumbnail.png")
+        self.new_thumbnail(thumbnail_dir)
+
+        # render data section
+        self.render_data_section = self.new_section("Render Data")
+        self.shot_num = self.render_data_section.add_label("SH: 0000")
+        self.frame_range = self.render_data_section.add_label("Frame Range: 1001 - 1100")
+        self.render_res = self.render_data_section.add_label("Resolution: 1920x1080")
+        self.render_fps = self.render_data_section.add_label("FPS: 24")
+
+        # description section
+        self.description_section = self.new_section("Description")
+        self.description_label = self.description_section.add_label("my test description")
 
 class ShotPage(QWidget):
     def __init__(self, parent=None):

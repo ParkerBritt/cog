@@ -1,6 +1,6 @@
 import os
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QWidget, QHBoxLayout, QPushButton, QLineEdit, QSpacerItem, QSizePolicy, QListWidget, QListWidgetItem, QSpinBox, QTextEdit, QScrollArea
-from PySide6.QtGui import QIcon, QFont
+from PySide6.QtGui import QIcon, QFont, QPixmap
 from PySide6.QtCore import QSize, Qt
 from . import shot_utils, file_utils, interface_utils
 
@@ -32,7 +32,7 @@ class InfoPanel(QScrollArea):
         # # Create a content widget and a layout for it
         content_widget = QWidget()
         # self.shot_page_layout.addWidget(content_widget)
-        self.shot_side_secondary_layout = QVBoxLayout(content_widget)  # Set the layout to the content widget
+        self.layout = QVBoxLayout(content_widget)  # Set the layout to the content widget
 
         # set the content widget to the scroll area
         self.setWidget(content_widget)
@@ -41,72 +41,100 @@ class InfoPanel(QScrollArea):
 
 
         # title
-        self.section_title = QLabel("Info")
-        self.section_title.setFont(self.header_font)
-        self.shot_side_secondary_layout.addWidget(self.section_title)
-
-
-
-        # shot thumbnail
-        self.shot_thumbnail = QLabel()
-        self.shot_thumbnail_size = (192*1.3, 108*1.3)
-        print(*self.shot_thumbnail_size)
-        self.shot_thumbnail.setMaximumSize(*self.shot_thumbnail_size)
-        self.shot_side_secondary_layout.addWidget(self.shot_thumbnail)
+        self.title = QLabel("Info")
+        self.title.setFont(self.header_font)
+        self.layout.addWidget(self.title)
 
         # general shot data container
         self.shot_render_data_widget = QWidget()
         self.shot_render_data_widget.setStyleSheet("QWidget {background-color: #2a2e32; border-radius: 15px;}")
-        shot_render_data_layout = QVBoxLayout(self.shot_render_data_widget)
-        self.shot_side_secondary_layout.addWidget(self.shot_render_data_widget)
-        general_shot_data_title = QLabel("Render Data")
-        general_shot_data_title.setFont(self.header_font)
-        shot_render_data_layout.addWidget(general_shot_data_title)
 
-        # shot name
-        self.shot_name_label = QLabel("SH")
-        self.shot_name_label.hide()
-        shot_render_data_layout.addWidget(self.shot_name_label)
+    def new_thumbnail(self, thumbnail_path=None, thumbnail_size=None):
+        # thumbnail = self.new_section()
+        # thumbnail.
+        # thumbnail = Thumbnail(thumbnail_path, thumbnail_size)
+        # self.layout.addWidget(thumbnail)
 
-        # frame range
-        self.shot_frame_range_label = QLabel("")
-        shot_render_data_layout.addWidget(self.shot_frame_range_label)
-
-        # render res
-        self.shot_render_res_label = QLabel("Resolution: 1920x1080")
-        shot_render_data_layout.addWidget(self.shot_render_res_label)
-
-        # render fps
-        self.shot_render_fps_label = QLabel("FPS: 24")
-        shot_render_data_layout.addWidget(self.shot_render_fps_label)
-
-        # codec
-
-        # date recorded
-
-        # shot description
-        self.shot_description_widget = QWidget()
-        self.shot_description_widget.setStyleSheet("QWidget {background-color: #2a2e32; border-radius: 15px;}")
-        shot_description_layout = QVBoxLayout(self.shot_description_widget)
-        self.shot_side_secondary_layout.addWidget(self.shot_description_widget)
-
-        description_title = QLabel("Shot Description")
-        description_title.setFont(self.header_font)
-        self.shot_description_title = description_title
-        shot_description_layout.addWidget(self.shot_description_title)
-        self.shot_description_label = QLabel("")
-        shot_description_layout.addWidget(self.shot_description_label)
-
-        self.shot_description_widget.hide()
+        thumbnail_section = InfoSection(self)
+        thumbnail_section.add_thumbnail(thumbnail_path, thumbnail_size) 
+        return thumbnail_section
 
 
-        self.shot_side_secondary_layout.addStretch()
-
-        self.shot_edit_button = QPushButton("Edit")
-        self.shot_edit_button.clicked.connect(self.on_shot_edit)
-        self.shot_edit_button.setStyleSheet(self.style_sheet)
-        self.shot_side_secondary_layout.addWidget(self.shot_edit_button)
+    def new_section(self, section_title=None):
+        # section_background.hide()
+        new_section = InfoSection(self, section_title)
+        return new_section
 
     def on_shot_edit(self):
         pass
 
+    def create_bottom_buttons(self):            
+        self.layout.addStretch()
+
+        # edit button
+        self.shot_edit_button = QPushButton("Edit")
+        self.shot_edit_button.clicked.connect(self.on_shot_edit)
+        self.shot_edit_button.setStyleSheet(self.style_sheet)
+        self.layout.addWidget(self.shot_edit_button)
+
+class Thumbnail(QLabel):
+    def __init__(self, thumbnail_path=None, thumbnail_size=None, parent=None):
+        super().__init__(parent)
+        if(thumbnail_size is None):
+            thumbnail_size = (192*1.3, 108*1.3)
+        # shot thumbnail
+        self.label = self
+        # self.layout = QVBoxLayout(self)
+        #
+        # self.label = QLabel()
+        # self.layout.addWidget(self.label)
+        self.thumbnail_size = thumbnail_size
+        self.label.setMaximumSize(*self.thumbnail_size)
+
+        if(thumbnail_path):
+            self.set_thumbnail(thumbnail_path)
+    
+    def set_thumbnail(self, image_path):
+        pixmap = QPixmap(image_path)
+        pixmap = pixmap.scaled(QSize(*self.thumbnail_size), Qt.KeepAspectRatioByExpanding, Qt.FastTransformation)
+        self.label.setPixmap(pixmap)
+
+
+class InfoSection():
+    def __init__(self, info_panel, section_title=None, parent=None):
+            # section
+            section_background = QWidget()
+            section_background.setStyleSheet("QWidget {background-color: #2a2e32; border-radius: 15px;}")
+            section_layout = QVBoxLayout(section_background)
+            # info_panel.layout.insertWidget(info_panel.layout.count()-2, section_background)
+            info_panel.layout.addWidget(section_background)
+
+            if(section_title):
+                # section title
+                self.section_title = QLabel(section_title)
+                self.section_title.setFont(info_panel.header_font)
+                section_layout.addWidget(self.section_title)
+
+            self.section_background = section_background
+            self.section_layout = section_layout
+
+    def add_label(self, label_text=""):
+           new_label = QLabel(label_text)
+           self.section_layout.addWidget(new_label)
+           return new_label
+
+    def add_thumbnail(self, thumbnail_path=None, thumbnail_size=None):
+        thumbnail = self.add_label()
+        if(thumbnail_size is None):
+            thumbnail_size = (192*1.3, 108*1.3)
+        self.thumbnail_size = thumbnail_size
+
+        self.thumbnail = thumbnail
+
+        if(thumbnail_path):
+            self.set_thumbnail(thumbnail_path)
+
+    def set_thumbnail(self, image_path):
+        pixmap = QPixmap(image_path)
+        pixmap = pixmap.scaled(QSize(*self.thumbnail_size), Qt.KeepAspectRatioByExpanding, Qt.FastTransformation)
+        self.thumbnail.setPixmap(pixmap)
