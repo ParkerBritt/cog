@@ -8,7 +8,9 @@ from ..utils import shot_utils, file_utils, interface_utils, fonts
 class InfoPanel(QScrollArea):
     def __init__(self, parent=None):
         super().__init__(parent)
-        
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.width = 350
+        self.setMaximumWidth(self.width)
         # init vars
         self.update_data = []
         self.update_data_mapping = None
@@ -118,28 +120,6 @@ class InfoPanel(QScrollArea):
         self.update_sections(mapped_data)
 
 
-class Thumbnail(QLabel):
-    def __init__(self, thumbnail_path=None, thumbnail_size=None, parent=None):
-        super().__init__(parent)
-        if(thumbnail_size is None):
-            thumbnail_size = (192*1.3, 108*1.3)
-        # shot thumbnail
-        self.label = self
-        # self.layout = QVBoxLayout(self)
-        #
-        # self.label = QLabel()
-        # self.layout.addWidget(self.label)
-        self.thumbnail_size = thumbnail_size
-        self.label.setMaximumSize(*self.thumbnail_size)
-
-        if(thumbnail_path):
-            self.set_thumbnail(thumbnail_path)
-    
-    def set_thumbnail(self, image_path):
-        pixmap = QPixmap(image_path)
-        pixmap = pixmap.scaled(QSize(*self.thumbnail_size), Qt.KeepAspectRatioByExpanding, Qt.FastTransformation)
-        self.label.setPixmap(pixmap)
-
 
 class InfoSection():
     def __init__(self, info_panel, section_title=None, parent=None):
@@ -150,6 +130,7 @@ class InfoSection():
             # info_panel.layout.insertWidget(info_panel.layout.count()-2, section_background)
             info_panel.layout.addWidget(section_background)
             
+            self.width = info_panel.width
             self.section_widgets = []
 
             if(section_title):
@@ -211,6 +192,11 @@ class InfoSection():
 
     def add_thumbnail(self, thumbnail_path=None, thumbnail_size=None):
         # create widget
+        aspect_ratio = (16,9)
+        if(thumbnail_size==None):
+            width = self.width-35
+            height = width/aspect_ratio[0]*aspect_ratio[1]
+            thumbnail_size = (width, height)
         thumbnail = Thumbnail(thumbnail_path, thumbnail_size)
         self.section_layout.addWidget(thumbnail)
 
@@ -242,6 +228,6 @@ class Thumbnail(QLabel):
         if(not os.path.exists(image_path)):
             print("thumbnail path does not exist:", image_path)
         pixmap = QPixmap(image_path)
-        pixmap = pixmap.scaled(QSize(*self.thumbnail_size), Qt.KeepAspectRatioByExpanding, Qt.FastTransformation)
+        pixmap = pixmap.scaled(QSize(*self.thumbnail_size), Qt.KeepAspectRatio, Qt.FastTransformation)
         self.setPixmap(pixmap)
         
