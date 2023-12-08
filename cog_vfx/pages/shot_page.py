@@ -392,7 +392,7 @@ class NewShotInterface(QDialog):
 class ShotListWidget(ObjectListPanel):
     def __init__(self, tree_widget=None, info_widget=None, parent=None):
         super().__init__(tree_widget, info_widget, parent)
-
+        self.element_page_label.setText("Shots")
 
     def on_object_add(self):
         # file_utils.new_object("SH030")
