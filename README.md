@@ -1,1 +1,2 @@
-so far just a test to get pip packages working
+# Cog Vfx
+Pipeline tool for school short film 
