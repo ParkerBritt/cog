@@ -10,10 +10,11 @@ from ..utils import shot_utils, file_utils, utils, interface_utils
 from ..utils.houdini_wrapper import launch_houdini, launch_hython
 from ..utils.interface_utils import quick_dialog
 from ..utils.file_utils import get_pkg_asset_path
+from ..dialogs.new_element_dialog import NewElementDialog
 
 # import panels
 from ..panels.info_panel import InfoPanel
-from ..panels.object_list_panel import ObjectListPanel
+from ..panels.element_list_panel import ElementListPanel
 
 style_sheet = interface_utils.get_style_sheet()
 
@@ -241,118 +242,10 @@ class Old_ShotListWidget(QListWidget):
         else:
             print("Error:", shot_data["file_name"],"has no scene.hipnc file")
 
-class NewShotInterface(QDialog):
-    def __init__(self, parent=None, shot_list=None, edit=False, shot_data=None):
-        super().__init__(parent)
-        self.setWindowTitle("New Shot")
-        self.resize(400,600)
-        self.shot_list = shot_list
 
-        # edit mode stuff
-        self.edit_mode=edit
-        self.existing_shot_data = shot_data
-
-        self.initUI()
-
-    def initUI(self):
-        self.layout = QVBoxLayout()
-        self.setLayout(self.layout)
-
-        # Shot Number
-        self.layout.addWidget(QLabel("Shot Number"))
-        self.select_shot_num = QSpinBox()
-        shot_num = 10
-        if(self.shot_list and len(self.shot_list.selectedItems())>0):
-            print("shot_list", self.shot_list)
-            shot_data = interface_utils.get_list_widget_data(self.shot_list)
-            shot_num = shot_data["shot_num"] if "shot_num" in shot_data else 10
-            if(not self.edit_mode):
-                shot_num+=10
-        self.select_shot_num.setRange(1, 9999)
-        self.select_shot_num.setValue(shot_num)
-        self.layout.addWidget(self.select_shot_num)
-
-        # frame range title
-        self.layout.addWidget(QLabel("Frame Range"))
-        frame_range_layout = QHBoxLayout()
-        self.layout.addLayout(frame_range_layout)
-
-        # frame start box one
-        self.select_start_frame = QSpinBox()
-        self.select_start_frame.setRange(1001, 9999)
-        self.select_start_frame.setValue(1001)
-        frame_range_layout.addWidget(self.select_start_frame)
-
-        # frame start box one
-        self.select_end_frame = QSpinBox()
-        self.select_end_frame.setRange(1001, 9999)
-        self.select_end_frame.setValue(1100)
-        frame_range_layout.addWidget(self.select_end_frame)
-
-        # resolution title
-        self.layout.addWidget(QLabel("Resolution"))
-        res_layout = QHBoxLayout()
-        self.layout.addLayout(res_layout)
-
-        # resolution width
-        self.select_res_width = QSpinBox()
-        self.select_res_width.setRange(1, 9999)
-        self.select_res_width.setValue(1920)
-        res_layout.addWidget(self.select_res_width)
-
-        # resolution height
-        self.select_res_height = QSpinBox()
-        self.select_res_height.setRange(1, 9999)
-        self.select_res_height.setValue(1080)
-        res_layout.addWidget(self.select_res_height)
-
-        # fps
-        self.layout.addWidget(QLabel("FPS"))
-        self.select_fps = QSpinBox()
-        self.select_fps.setRange(1, 9999)
-        self.select_fps.setValue(24)
-        self.layout.addWidget(self.select_fps)
-
-        # shot description
-        self.layout.addWidget(QLabel("Shot Description"))
-        self.shot_description_box = QTextEdit()
-        self.layout.addWidget(self.shot_description_box)
-
-        # add stretch
-        self.layout.addStretch()
-
-        # bottom buttons
-        bottom_buttons_layout = QHBoxLayout()
-        bottom_button_min_size = (50,30)
-        ok_button = QPushButton("ok")
-        cancel_button = QPushButton("cancel")
-        ok_button.clicked.connect(self.on_ok_pressed)
-        cancel_button.clicked.connect(self.on_cancel_pressed)
-        ok_button.setMinimumSize(*bottom_button_min_size)
-        cancel_button.setMinimumSize(*bottom_button_min_size)
-        bottom_buttons_layout.addStretch()
-        # add widgets
-        bottom_buttons_layout.addWidget(ok_button)
-        bottom_buttons_layout.addWidget(cancel_button)
-        self.layout.addLayout(bottom_buttons_layout)
-
-        if(self.existing_shot_data):
-            self.fill_existing_values()
-
-    def fill_existing_values(self):
-        self.fill_value(self.select_start_frame, "start_frame")
-        self.fill_value(self.select_end_frame, "end_frame")
-        self.fill_value(self.shot_description_box, "description")
-        self.fill_value(self.select_res_width, "res_width")
-        self.fill_value(self.select_res_height, "res_height")
-        self.fill_value(self.select_fps, "fps")
-
-    def fill_value(self, widget, value):
-        if(value in self.existing_shot_data):
-            if(isinstance(widget, QTextEdit)):
-                widget.setPlainText(self.existing_shot_data[value])
-            elif(isinstance(widget, QSpinBox)):
-                widget.setValue(self.existing_shot_data[value])
+class NewShotDialog(NewElementDialog):
+    def __init__(self, shot_list, edit=False, parent=None):
+        super().__init__(self, shot_list, edit, parent)
 
     # ----- SIGNALS ------- 
 
@@ -388,13 +281,27 @@ class NewShotInterface(QDialog):
         self.finished_status = 1
         self.close()
 
+# class NewShotDialog(NewElementDialog):
+#     def __init__(self, element_list, edit=False, element_name="element", parent=None):
+#         super().__init__():
+
 # ------------- SHOT PAGE -----------------
-class ShotListWidget(ObjectListPanel):
+class ShotListWidget(ElementListPanel):
     def __init__(self, tree_widget=None, info_widget=None, parent=None):
         super().__init__(tree_widget, info_widget, parent)
         self.element_page_label.setText("Shots")
 
-    def on_object_add(self):
+    def set_elements(self):
+        self.elements = shot_utils.get_shots()
+
+    def on_element_add(self):
+        print("shot add dialog")
+        self.new_shot_dialog = NewElementDialog(self.element_list, edit=False, element_name="Shots")
+        self.new_shot_dialog.add_spin_box("FPS", "fps", 10)
+        self.new_shot_dialog.add_double_spin_box("Frame Range", ("start_frame", "end_frame"), 1001, 1100)
+        self.new_shot_dialog.exec()
+
+    def old_on_elemend_add(self):
         # file_utils.new_object("SH030")
         # self.populate_object_list()
         print('shot add')

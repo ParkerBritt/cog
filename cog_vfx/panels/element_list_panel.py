@@ -2,17 +2,19 @@ import os
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QWidget, QHBoxLayout, QPushButton, QLineEdit, QSpacerItem, QSizePolicy, QListWidget, QListWidgetItem, QSpinBox, QTextEdit, QScrollArea
 from PySide6.QtGui import QIcon, QFont
 from PySide6.QtCore import QSize, Qt
-from ..utils import shot_utils, file_utils, interface_utils
+from ..utils import shot_utils, file_utils, interface_utils, fonts
 
 # -- Object Selector -- 
 
-class ObjectListPanel(QWidget):
+class ElementListPanel(QWidget):
     def __init__(self, tree_widget = None, info_widget = None, parent=None):
         super().__init__(parent)
         # assign argument variables
         self.tree_widget = tree_widget
         self.info_widget = info_widget
-        self.element_data = {}
+        self.elements = []
+        # self.element_data = {}
+        self.fonts = fonts.get_fonts()
 
         # create ui
         self.init_ui()
@@ -26,18 +28,20 @@ class ObjectListPanel(QWidget):
         print(" MAXIMUM SIZE:", self.minimumSizeHint().width())
 
         # Label
-        self.element_page_label = QLabel("Objects")
-        # self.element_page_label.setFont(self.header_font)
+        self.element_page_label = QLabel("Elements")
+        self.element_page_label.setFont(self.fonts["header"])
         self.layout.addWidget(self.element_page_label)
 
         # Search Bar
         self.element_search_bar = QLineEdit()
         # self.element_search_bar.setMaximumWidth(self.element_search_bar.minimumSizeHint().width())
-        self.element_search_bar.setTextMargins(5, 1, 5, 1)
+        self.element_search_bar.setTextMargins(5, 3, 5, 3)
+        self.element_search_bar.setStyleSheet("QLineEdit {border-radius: 10px;}")
         search_bar_font = QFont()
-        search_bar_font.setPointSize(12)
+        search_bar_font.setPointSize(10)
         self.element_search_bar.setFont(search_bar_font)
         self.element_search_bar.textChanged.connect(self.on_search_changed)
+        self.element_search_bar.setPlaceholderText("Search...")
         self.layout.addWidget(self.element_search_bar)
         spacer = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Preferred)
         self.layout.addItem(spacer)
@@ -117,10 +121,10 @@ class ObjectListPanel(QWidget):
             self.element_list.setCurrentRow(0)
 
     def set_elements(self):
-        self.elements = shot_utils.get_shots()
+        print("set_elements method meant to be overloaded")
 
     def on_element_add(self):
-        print("method meant to be overloaded")
+        print("on_element_add method meant to be overloaded")
 
     def on_element_delete(self):
         print('element delete')
