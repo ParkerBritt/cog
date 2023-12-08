@@ -95,7 +95,7 @@ class InfoPanel(QScrollArea):
         #     return
         # selected_item = selected_items[0]
         # sel_object_data =  selected_item.data(Qt.UserRole+1)
-        sel_object_data = interface_utils.data_from_list_widget(list_widget)
+        sel_object_data = interface_utils.get_list_widget_data(list_widget)
 
         # sel_object_data = get_object_data(item=selected_object) 
         print("sel_object_data", sel_object_data)
@@ -234,7 +234,7 @@ class Thumbnail(QLabel):
     def set_image(self, image_path):
         # convert list widget to image path
         if(isinstance(image_path, QListWidget)):
-            object_data = interface_utils.data_from_list_widget(image_path)
+            object_data = interface_utils.get_list_widget_data(image_path)
             if(not "dir" in object_data):
                 return
             image_path = os.path.join(object_data["dir"], "thumbnail.png")

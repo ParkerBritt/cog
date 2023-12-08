@@ -8,26 +8,9 @@ from .houdini_wrapper import launch_houdini, launch_hython
 from .interface_utils import quick_dialog
 from .file_utils import get_pkg_asset_path
 from .info_panel import InfoPanel
+from .object_list_panel import ObjectListPanel
 
 style_sheet = interface_utils.get_style_sheet()
-
-role_mapping = {
-    "shot_data": Qt.UserRole + 1,
-}
-
-def get_shot_data(shot_list=None, item=None):
-    shots = shot_utils.get_shots()
-    if(item == None):
-        selected_shot = shot_list.selectedItems()
-        if(len(selected_shot)>0):
-            selected_shot = selected_shot[0]
-        else:
-            return None
-    else:
-        selected_shot = item
-
-    return selected_shot.data(role_mapping["shot_data"])
-
 
 
 
@@ -214,7 +197,7 @@ class Old_ShotListWidget(QListWidget):
             action_open = contextMenu.addAction("Open Shot")
             action_render = contextMenu.addAction("Render Shot")
             action_delete = contextMenu.addAction("Delete Shot")
-            shot_data = get_shot_data(item=item)
+            shot_data = interface_utils.get_list_widget_data(item=item)
 
         action = contextMenu.exec_(self.mapToGlobal(event.pos()))
 
@@ -276,7 +259,7 @@ class NewShotInterface(QDialog):
         shot_num = 10
         if(self.shot_list and len(self.shot_list.selectedItems())>0):
             print("shot_list", self.shot_list)
-            shot_data = get_shot_data(self.shot_list)
+            shot_data = interface_utils.get_list_widget_data(self.shot_list)
             shot_num = shot_data["shot_num"] if "shot_num" in shot_data else 10
             if(not self.edit_mode):
                 shot_num+=10
@@ -401,7 +384,7 @@ class NewShotInterface(QDialog):
         self.close()
 
 # ------------- SHOT PAGE -----------------
-class ShotListWidget(interface_utils.ObjectSelector):
+class ShotListWidget(ObjectListPanel):
     def __init__(self, tree_widget=None, info_widget=None, parent=None):
         super().__init__(tree_widget, info_widget, parent)
 
@@ -417,6 +400,7 @@ class ShotListWidget(interface_utils.ObjectSelector):
 
 
 
+# create side panel for showing shot information
 class ShotInfoPanel(InfoPanel):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -556,7 +540,7 @@ class ShotPage(QWidget):
         if(len(selected_items)==0):
             return
         selected_shot = selected_items[0]
-        sel_shot_data = get_shot_data(item=selected_shot) 
+        sel_shot_data = interface_utils.get_list_widget_data(self.shot_list_widget.element_list, item=selected_shot) 
         directory_path = sel_shot_data["dir"]
         directory_path += "/"+self.selected_role
         if(not os.path.exists(directory_path)):
@@ -636,7 +620,7 @@ class ShotPage(QWidget):
     def create_shot_list_panel(self):
         self.shot_list_widget = ShotListWidget(info_widget=self.shot_side_widget)
         self.shot_list_layout_parent.addWidget(self.shot_list_widget)
-        self.shot_list = self.shot_list_widget.object_list
+        self.shot_list = self.shot_list_widget.element_list
 
 
 
