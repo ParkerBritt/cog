@@ -1,14 +1,19 @@
 import os, json
+# import QT
 from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedLayout, QListWidget, QSizePolicy, QMenu, QSplitter, QListWidgetItem, QSpinBox, QTextEdit, QDialog, QScrollArea, QProgressBar, QLineEdit, QSpacerItem, QTreeWidget, QTreeWidgetItem, QButtonGroup
 from PySide6.QtGui import QIcon, QFont, QPixmap
 from PySide6.QtCore import QSize, Qt, QThread, Signal
 import pkg_resources
-from . import shot_utils, file_utils, utils, interface_utils
-from .houdini_wrapper import launch_houdini, launch_hython
-from .interface_utils import quick_dialog
-from .file_utils import get_pkg_asset_path
-from .info_panel import InfoPanel
-from .object_list_panel import ObjectListPanel
+
+# import utilities
+from ..utils import shot_utils, file_utils, utils, interface_utils
+from ..utils.houdini_wrapper import launch_houdini, launch_hython
+from ..utils.interface_utils import quick_dialog
+from ..utils.file_utils import get_pkg_asset_path
+
+# import panels
+from ..panels.info_panel import InfoPanel
+from ..panels.object_list_panel import ObjectListPanel
 
 style_sheet = interface_utils.get_style_sheet()
 

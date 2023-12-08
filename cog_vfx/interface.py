@@ -3,10 +3,10 @@ from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, Q
 from PySide6.QtGui import QIcon, QFont, QPixmap
 from PySide6.QtCore import QSize, Qt
 import pkg_resources
-from . import shot_utils, utils, interface_utils
-from .file_utils import get_pkg_asset_path
-from .shot_page import ShotPage
-from .asset_page import AssetPage
+from .utils import shot_utils, utils, interface_utils
+from .utils.file_utils import get_pkg_asset_path
+from .pages.shot_page import ShotPage
+from .pages.asset_page import AssetPage
 
 
 

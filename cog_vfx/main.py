@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QApplication
-from . import file_utils
+from .utils import file_utils
 import sys
 
 # Conditional import

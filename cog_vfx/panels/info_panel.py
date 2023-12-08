@@ -2,7 +2,7 @@ import os, re
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QWidget, QHBoxLayout, QPushButton, QLineEdit, QSpacerItem, QSizePolicy, QListWidget, QListWidgetItem, QSpinBox, QTextEdit, QScrollArea
 from PySide6.QtGui import QIcon, QFont, QPixmap
 from PySide6.QtCore import QSize, Qt
-from . import shot_utils, file_utils, interface_utils, fonts
+from ..utils import shot_utils, file_utils, interface_utils, fonts
 
 # -- info panel --
 class InfoPanel(QScrollArea):

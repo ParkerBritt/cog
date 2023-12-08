@@ -2,7 +2,7 @@ import os
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QWidget, QHBoxLayout, QPushButton, QLineEdit, QSpacerItem, QSizePolicy, QListWidget, QListWidgetItem, QSpinBox, QTextEdit, QScrollArea
 from PySide6.QtGui import QIcon, QFont
 from PySide6.QtCore import QSize, Qt
-from . import shot_utils, file_utils, interface_utils
+from ..utils import shot_utils, file_utils, interface_utils
 
 # -- Object Selector -- 
 

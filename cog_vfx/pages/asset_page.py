@@ -3,9 +3,9 @@ from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, Q
 from PySide6.QtGui import QIcon, QFont, QPixmap
 from PySide6.QtCore import QSize, Qt, QThread, Signal
 import pkg_resources
-from . import file_utils, utils
-from .houdini_wrapper import launch_houdini, launch_hython
-from .interface_utils import quick_dialog, get_style_sheet
+from ..utils import file_utils, utils
+from ..utils.houdini_wrapper import launch_houdini, launch_hython
+from ..utils.interface_utils import quick_dialog, get_style_sheet
 
 role_mapping = {
     "asset_data": Qt.UserRole + 1,
