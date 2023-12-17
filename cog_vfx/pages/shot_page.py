@@ -13,8 +13,7 @@ from ..utils.file_utils import get_pkg_asset_path
 from ..dialogs.new_element_dialog import NewElementDialog
 
 # import panels
-from ..panels.info_panel import InfoPanel
-from ..panels.element_list_panel import ElementListPanel
+from ..panels import AbstractInfoPanel, AbstractListPanel, ShotListPanel
 
 style_sheet = interface_utils.get_style_sheet()
 
@@ -286,7 +285,7 @@ class NewShotDialog(NewElementDialog):
 #         super().__init__():
 
 # ------------- SHOT PAGE -----------------
-class ShotListWidget(ElementListPanel):
+class ShotListWidget(AbstractListPanel):
     def __init__(self, tree_widget=None, info_widget=None, parent=None):
         super().__init__(tree_widget, info_widget, parent)
         self.element_page_label.setText("Shots")
@@ -313,7 +312,7 @@ class ShotListWidget(ElementListPanel):
 
 
 # create side panel for showing shot information
-class ShotInfoPanel(InfoPanel):
+class ShotInfoPanel(AbstractInfoPanel):
     def __init__(self, parent=None):
         super().__init__(parent)
         # title

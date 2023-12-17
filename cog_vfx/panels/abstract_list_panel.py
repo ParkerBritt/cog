@@ -1,12 +1,23 @@
 import os
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QWidget, QHBoxLayout, QPushButton, QLineEdit, QSpacerItem, QSizePolicy, QListWidget, QListWidgetItem, QSpinBox, QTextEdit, QScrollArea
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QWidget, QHBoxLayout, QPushButton, QLineEdit, QSpacerItem, QSizePolicy, QListWidget, QListWidgetItem, QSpinBox, QTextEdit, QScrollArea, QMenu
 from PySide6.QtGui import QIcon, QFont
 from PySide6.QtCore import QSize, Qt
 from ..utils import shot_utils, file_utils, interface_utils, fonts
 
 # -- Object Selector -- 
+def showContextMenu(position, list_widget):
+    menu = QMenu()
+    action1 = menu.addAction("Action 1")
+    action2 = menu.addAction("Action 2")
+    action = menu.exec_(list_widget.mapToGlobal(position))
 
-class ElementListPanel(QWidget):
+    if action == action1:
+        print("Action 1 selected")
+    elif action == action2:
+        print("Action 2 selected")
+
+
+class AbstractListPanel(QWidget):
     def __init__(self, tree_widget = None, info_widget = None, parent=None):
         super().__init__(parent)
         # assign argument variables
@@ -54,6 +65,9 @@ class ElementListPanel(QWidget):
         self.element_list.setIconSize(QSize(500,50))
         self.populate_element_list()
         self.layout.addWidget(self.element_list)
+        # context menu
+        self.element_list.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.element_list.customContextMenuRequested.connect(lambda pos: showContextMenu(pos, self.element_list))
 
         # buttons
         bottom_buttons_layout = QHBoxLayout()

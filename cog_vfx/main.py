@@ -1,13 +1,7 @@
 from PySide6.QtWidgets import QApplication
 from .utils import file_utils
+from .interface import MainWindow
 import sys
-
-# Conditional import
-if __name__ == "__main__":
-    from interface import MainWindow  # Absolute import for direct script run
-else:
-    from .interface import MainWindow  # Relative import for package use
-
 
 def launch_app():
     app = QApplication([])

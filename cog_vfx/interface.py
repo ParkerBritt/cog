@@ -5,8 +5,7 @@ from PySide6.QtCore import QSize, Qt
 import pkg_resources
 from .utils import shot_utils, utils, interface_utils
 from .utils.file_utils import get_pkg_asset_path
-from .pages.shot_page import ShotPage
-from .pages.asset_page import AssetPage
+from .pages import ShotPage, AssetPage
 
 
 

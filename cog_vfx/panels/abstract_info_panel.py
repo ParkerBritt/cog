@@ -5,7 +5,7 @@ from PySide6.QtCore import QSize, Qt
 from ..utils import shot_utils, file_utils, interface_utils, fonts
 
 # -- info panel --
-class InfoPanel(QScrollArea):
+class AbstractInfoPanel(QScrollArea):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
