@@ -2,7 +2,7 @@ import os
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QWidget, QHBoxLayout, QPushButton, QLineEdit, QSpacerItem, QSizePolicy, QListWidget, QListWidgetItem, QSpinBox, QTextEdit, QScrollArea
 from PySide6.QtGui import QIcon, QFont
 from PySide6.QtCore import QSize, Qt
-from . import shot_utils, file_utils
+from . import shot_utils
 
 # -- misc small utils -- 
 role_mapping = {
@@ -26,7 +26,8 @@ def get_list_widget_data(list_widget, item=None):
     return sel_object_data
 
 def get_style_sheet():
-    stylesheet_path = file_utils.get_pkg_asset_path("assets/style/style.css")
+    from .file_utils import get_pkg_asset_path
+    stylesheet_path = get_pkg_asset_path("assets/style/style.css")
     with open(stylesheet_path, "r") as file:
         stylesheet = file.read()
 

@@ -111,7 +111,7 @@ class AbstractListPanel(QWidget):
         if(self.info_widget):
             self.info_widget.update(self.element_list)
         if(self.tree_widget):
-            self.populate_file_tree()
+            self.tree_widget.populate_file_tree()
 
     def update_element_info():
         pass
