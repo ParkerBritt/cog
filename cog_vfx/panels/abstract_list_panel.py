@@ -5,19 +5,6 @@ from PySide6.QtCore import QSize, Qt
 from ..utils import shot_utils, file_utils, interface_utils, fonts
 
 # -- Object Selector -- 
-# class AbstractListContextMenu(QMenu):
-#     def __init__(self, position, list_widget):
-#         super().__init__()
-#         # self.menu = QMenu()
-#         self.add_actions()
-#
-#     # def add_actions(self):
-#     #     print("add_actions method meant to overloaded")
-#
-#     def show(self):
-#         action = self.exec(list_widget.mapToGlobal(position))
-
-
 def showContextMenu(position, list_widget):
     ContextMenu(position, list_widget)
 

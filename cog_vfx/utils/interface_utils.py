@@ -10,13 +10,13 @@ role_mapping = {
 }
 
 def set_list_widget_data(list_item, data):
-    print("ROLE MAPPING", role_mapping)
+    # print("ROLE MAPPING", role_mapping)
     list_item.setData(role_mapping["item_data"], data)
 
 def get_list_widget_data(list_widget, item=None):
     if(item==None):
         selected_items = list_widget.selectedItems()
-        print("selected items", selected_items)
+        # print("selected items", selected_items)
         if(len(selected_items)==0):
             return
         selected_item = selected_items[0]

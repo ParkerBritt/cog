@@ -38,7 +38,8 @@ def launch_application(app_path, file_path):
 
 def launch_houdini(file_path, additional_vars=None):
 
-    set_environment_variables(additional_vars)
+    if(additional_vars):
+        set_environment_variables(additional_vars)
     app_path = r'C:\Program Files\Side Effects Software\Houdini 19.5.605\bin\houdini.exe' if platform.system() == 'Windows' else '/opt/hfs19.5.605/bin/houdini'
     launch_application(app_path, file_path)
 
