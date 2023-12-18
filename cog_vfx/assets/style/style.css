@@ -1,45 +1,44 @@
-/* Set the general color scheme */
+/* set the general color scheme */
 * {
-    background-color: #2a2e32; /* Dark background */
-    color: #fff; /* White text */
+    background-color: #2a2e32; /* dark background */
+    color: #fff; /* white text */
 }
 
 QLabel {
     background-color: rgba(255, 255, 255, 0);
 }
-/* Style the buttons */
+/* buttons */
 QPushButton {
     background-color: #3f4348; /* Darker grey for buttons */
     color: #fff; /* White text */
-    border-radius: 8px; /* Rounded corners */
+    border-radius: 8px;
     padding: 5px 10px; /* Padding inside buttons */
 }
 
 QPushButton:hover {
-    background-color: #666; /* Slightly lighter grey on hover */
+    background-color: #666;
 }
 
 QPushButton:pressed {
-    background-color: #777; /* Even lighter grey when pressed */
+    background-color: #777;
 }
 
 QHeaderView::section {
-    background-color: #3f4348; /* Darker grey, consistent with QPushButton */
-    color: #fff; /* White text */
-    padding: 3px; /* Padding for header */
-    border-radius: 4px; /* Slightly rounded corners for the header */
+    background-color: #3f4348;
+    color: #fff;
+    padding: 3px;
+    border-radius: 4px;
 }
 
 QPushButton:checked {
-    background-color: #777; /* Even lighter grey when pressed */
+    background-color: #777;
 }
-
 QSpinBox {
     background-color: #1b1e20;
 }
 
 QLineEdit {
-    border-radius: 8px; /* Rounded corners */
+    border-radius: 8px;
     background-color: #1b1e20;
 }
 
@@ -47,7 +46,7 @@ QTextEdit {
     background-color: #1b1e20;
 }
 
-/* Style for QListWidget */
+/* QListWidget */
 QListWidget {
     background-color: #1b1e20; /* Assuming you want a grey background for the list */
     alternate-background-color: #2a2a2a; /* Darker grey for alternate items */
@@ -55,27 +54,40 @@ QListWidget {
     border: 1px solid #333; /* Optional border */
 }
 
-/* Style for QListWidget items */
+/* QListWidget items */
 QListWidget::item {
     background-color: #333; /* Same as general background for items */
     color: #fff; /* White text */
 }
 
-/* Style for alternate QListWidget items for the striped effect */
+/* QListWidget alternating colors */
 QListWidget::item:alternate {
     background-color: #1b1e20; /* Slightly lighter grey for alternate items */
 }
 
-/* Style for a selected QListWidget item */
+/* QListWidget item */
 QListWidget::item:selected {
     background-color: #1e90ff; /* Blue selection color */
     color: #fff;
 }
 
 
-/* Style the scroll area */
+/* scroll area */
 QScrollArea, QScrollBar {
     background-color: #333; /* Same as general background */
 }
 
-/* Additional styles can be added for other widgets as needed */
+QMenu {
+    margin: 4px; /* Spacing between items */
+}
+
+/* Qmenu */
+QMenu::item {
+    padding: 5px 20px; /* Padding for the text */
+    border-radius: 8px;
+}
+
+QMenu::item:selected {
+    background-color: #1e90ff; /* Blue selection color */
+    color: #fff;
+}

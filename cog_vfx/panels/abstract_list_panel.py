@@ -72,6 +72,8 @@ class AbstractListPanel(QWidget):
         self.layout.addWidget(self.element_list)
         # context menu
         self.context_menu = QMenu()
+        style_sheet = interface_utils.get_style_sheet()
+        self.context_menu.setStyleSheet(style_sheet)
         self.element_list.setContextMenuPolicy(Qt.CustomContextMenu)
         self.element_list.customContextMenuRequested.connect(
                 lambda pos: self.context_menu.exec(self.element_list.mapToGlobal(pos)))

@@ -303,7 +303,7 @@ class ShotPage(QWidget):
         self.role_list_layout.addWidget(self.role_list)
 
     def create_shot_list_panel(self):
-        self.shot_list_widget = ShotListPanel(info_widget=self.shot_side_widget)
+        self.shot_list_widget = ShotListPanel(info_widget=self.shot_side_widget, parent=self)
         self.shot_list_layout_parent.addWidget(self.shot_list_widget)
         self.shot_list = self.shot_list_widget.element_list
 
