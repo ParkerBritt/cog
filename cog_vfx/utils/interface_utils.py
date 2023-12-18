@@ -16,6 +16,7 @@ def set_list_widget_data(list_item, data):
 def get_list_widget_data(list_widget, item=None):
     if(item==None):
         selected_items = list_widget.selectedItems()
+        print("selected items", selected_items)
         if(len(selected_items)==0):
             return
         selected_item = selected_items[0]

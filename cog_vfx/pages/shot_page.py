@@ -13,177 +13,12 @@ from ..utils.file_utils import get_pkg_asset_path
 from ..dialogs.new_element_dialog import NewElementDialog
 
 # import panels
-from ..panels import AbstractInfoPanel, AbstractListPanel, ShotListPanel
+from ..panels import AbstractInfoPanel, AbstractListPanel, ShotListPanel, ShotInfoPanel
 
 style_sheet = interface_utils.get_style_sheet()
 
 
 
-class RenderThread(QThread):
-    progress_update = Signal(int)
-    frame_update = Signal(str)
-    finished = Signal()
-
-    def __init__(self, scene_path, shot_data, render_node_path):
-        super(RenderThread, self).__init__()
-        self.scene_path = scene_path
-        self.shot_data = shot_data
-        self.node_path = render_node_path 
-
-    def run(self):
-        # prepare script to run
-        script = "import sys; module_directory = '{module_directory}';sys.path.append(module_directory); import husk_render; husk_render.exec_render_node('{scene_path}', '{node_path}')"
-        script = script.format(module_directory=get_pkg_asset_path(""), scene_path=self.scene_path, node_path=self.node_path)
-
-        self.process = launch_hython(self.scene_path, self.shot_data, script=script, live_mode=True)
-        while True:
-            output = self.process.stdout.readline()
-            # print("output", output)
-            if output == '' and self.process.poll() is not None:
-                break
-            if output.startswith('ALF_PROGRESS'):
-                progress = int(output.strip().split(' ')[1].rstrip('%'))
-                self.progress_update.emit(progress)
-            elif ">>> Render" in output:
-                frame_num = output[-9:-5]
-                print("CURRENT FRAME:", frame_num)
-                self.frame_update.emit(frame_num)
-
-    def terminate_process(self):
-        if self.process:
-            self.process.terminate()
-
-class RenderLoading(QDialog):
-    def __init__(self, parent, scene_path, shot_data, render_node_path):
-        super(RenderLoading, self).__init__(parent)
-        self.scene_path = scene_path
-        self.shot_data = shot_data
-        # self.subprocess_thread = subprocess_thread
-
-        self.initUI()
-        self.subprocess_thread = RenderThread(self.scene_path, self.shot_data, render_node_path)
-        self.subprocess_thread.progress_update.connect(self.updateProgressBar)
-        self.subprocess_thread.frame_update.connect(self.updateFrame)
-        self.subprocess_thread.finished.connect(self.closeDialog)
-        self.subprocess_thread.start()
-
-    def initUI(self):
-        self.progressBar = QProgressBar(self)
-        self.setMaximumSize(400, 50)
-        self.layout = QVBoxLayout()
-
-        # Shot Label
-        print(" \n\n\nSHOT DATA", self.shot_data)
-        self.shot_label = QLabel("Shot: "+self.shot_data['formatted_name'])
-        self.layout.addWidget(self.shot_label)
-
-        self.frame_label = QLabel("Render Setup")
-        self.layout.addWidget(self.frame_label)
-        self.layout.addWidget(self.progressBar)
-        self.setLayout(self.layout)
-        self.setGeometry(300, 300, 250, 150)
-        self.setWindowTitle("Render Progress")
-
-        self.cancel_button = QPushButton("Cancel")
-        self.cancel_button.clicked.connect(self.on_cancel_button)
-        self.layout.addWidget(self.cancel_button)
-
-    def on_cancel_button(self):
-        self.close()
-
-    def updateProgressBar(self, value):
-        self.progressBar.setValue(value)
-
-    def updateFrame(self, value):
-        self.frame_label.setText("Frame: " + value)
-
-    def closeDialog(self):
-        self.close()
-
-    def closeEvent(self, event):
-        self.subprocess_thread.terminate_process()
-        event.accept()
-
-
-class PopulateListThread(QThread):
-    finished = Signal(list)
-
-    def __init__(self, scene_path, shot_data):
-        QThread.__init__(self)
-        self.scene_path = scene_path
-        self.shot_data = shot_data
-
-    def run(self):
-        script = "import sys; module_directory = '{module_directory}';sys.path.append(module_directory); import husk_render; husk_render.get_render_nodes('{scene_path}')"
-        script = script.format(module_directory=get_pkg_asset_path(""), scene_path = self.scene_path)
-        # run script through hython
-        self.get_render_nodes_process = launch_hython(self.scene_path, self.shot_data, script=script, set_vars=False)
-
-        # extract data from stdout
-        render_nodes = []
-        for stdout_line in self.get_render_nodes_process.stdout.split("\n"):
-            if(stdout_line.startswith("__RETURN_RENDER_NODE:")):
-                stdout_line_split = stdout_line.split(":")
-                node_name = stdout_line_split[1]
-                node_path = stdout_line_split[2]
-                render_nodes.append({"name":node_name, "node_path":node_path})
-        print("emmiting", render_nodes)
-        self.finished.emit(render_nodes)
-
-class SelectRenderNodeDialog(QDialog):
-    def __init__(self, parent=None, scene_path=None, shot_data=None):
-        super(SelectRenderNodeDialog, self).__init__(parent)
-        self.scene_path = scene_path
-        self.shot_data = shot_data
-
-        # start thread
-        self.populate_list_thread = PopulateListThread(self.scene_path, self.shot_data)
-        self.populate_list_thread.finished.connect(self.populate_list)
-        self.populate_list_thread.start()
-
-        self.initUI()
-
-        self.setWindowTitle("Select Render Layer")
-
-    def initUI(self):
-        self.layout = QVBoxLayout()
-        self.setLayout(self.layout)
-
-        self.instruction_label = QLabel("Loading...")
-        self.layout.addWidget(self.instruction_label)
-
-        # create layer list
-        self.render_node_list = QListWidget()
-        self.layout.addWidget(self.render_node_list)
-
-        self.render_button = QPushButton("render")
-        self.render_button.hide()
-        self.render_button.clicked.connect(self.on_render_button)
-        self.layout.addWidget(self.render_button)
-        self.setModal(True)
-        self.show()
-
-    def populate_list(self, render_nodes):
-        print("populating list with", render_nodes)
-        self.render_nodes = render_nodes
-        self.layer_data_role = Qt.UserRole + 1
-        for render_node in self.render_nodes:
-            list_item = QListWidgetItem(render_node["name"])
-            list_item.setData(self.layer_data_role, render_node)
-            self.render_node_list.addItem(list_item)
-
-        self.instruction_label.setText("Please select the layer you'd like to render")
-        self.render_button.show()
-
-    def on_render_button(self):
-        print("render button clicked")
-        selected_items = self.render_node_list.selectedItems()
-        if(len(selected_items)==0):
-            return
-        sel_layer_path = selected_items[0].data(self.layer_data_role)["node_path"]
-        self.close()
-        render_loading = RenderLoading(self, self.scene_path, self.shot_data, sel_layer_path)
-        render_loading.show()
 
 
 
@@ -285,67 +120,6 @@ class NewShotDialog(NewElementDialog):
 #         super().__init__():
 
 # ------------- SHOT PAGE -----------------
-class ShotListWidget(AbstractListPanel):
-    def __init__(self, tree_widget=None, info_widget=None, parent=None):
-        super().__init__(tree_widget, info_widget, parent)
-        self.element_page_label.setText("Shots")
-
-    def set_elements(self):
-        self.elements = shot_utils.get_shots()
-
-    def on_element_add(self):
-        print("shot add dialog")
-        self.new_shot_dialog = NewElementDialog(self.element_list, edit=False, element_name="Shots")
-        self.new_shot_dialog.add_spin_box("FPS", "fps", 10)
-        self.new_shot_dialog.add_double_spin_box("Frame Range", ("start_frame", "end_frame"), 1001, 1100)
-        self.new_shot_dialog.exec()
-
-    def old_on_elemend_add(self):
-        # file_utils.new_object("SH030")
-        # self.populate_object_list()
-        print('shot add')
-        self.new_object = NewShotInterface(self, self.object_list)
-        # self.new_object.finished.connect(self.on_object_add_finished)
-        # self.new_object.show()
-        self.new_object.exec()
-
-
-
-# create side panel for showing shot information
-class ShotInfoPanel(AbstractInfoPanel):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        # title
-        self.title.setText("Shot Info")
-
-        self.update_data = ["start_frame", "end_frame", "fps", "shot_num", "description", "resolution"]
-        self.update_data_mapping = None
-
-        # create sections
-        self.create_sections()
-        self.create_bottom_buttons()
-
-    def create_sections(self):
-        # thumbnail
-        thumbnail_dir = get_pkg_asset_path("assets/icons/missing_shot_thumbnail.png")
-        _, self.shot_thumbnail = self.new_thumbnail(thumbnail_dir)
-
-        # render data section
-        self.render_data_section = self.new_section("Render Data")
-        self.shot_num = self.render_data_section.add_label("SH: {shot_num}")
-        self.frame_range = self.render_data_section.add_label("Frame Range: {start_frame} - {end_frame}")
-        self.render_res = self.render_data_section.add_label("Resolution: {resolution}")
-        self.render_fps = self.render_data_section.add_label("FPS: {fps}")
-        self.render_fps = self.render_data_section.add_label("test: {test}")
-
-        # description section
-        self.description_section = self.new_section("Description")
-        self.description_label = self.description_section.add_label("{description}")
-        # self.update_sections({"{shot_num}":"hello"})
-
-    def update(self, list_widget):
-        super().update(list_widget)
-        self.shot_thumbnail.set_image(list_widget)
 
 
 
@@ -529,7 +303,7 @@ class ShotPage(QWidget):
         self.role_list_layout.addWidget(self.role_list)
 
     def create_shot_list_panel(self):
-        self.shot_list_widget = ShotListWidget(info_widget=self.shot_side_widget)
+        self.shot_list_widget = ShotListPanel(info_widget=self.shot_side_widget)
         self.shot_list_layout_parent.addWidget(self.shot_list_widget)
         self.shot_list = self.shot_list_widget.element_list
 

@@ -5,16 +5,21 @@ from PySide6.QtCore import QSize, Qt
 from ..utils import shot_utils, file_utils, interface_utils, fonts
 
 # -- Object Selector -- 
-def showContextMenu(position, list_widget):
-    menu = QMenu()
-    action1 = menu.addAction("Action 1")
-    action2 = menu.addAction("Action 2")
-    action = menu.exec_(list_widget.mapToGlobal(position))
+# class AbstractListContextMenu(QMenu):
+#     def __init__(self, position, list_widget):
+#         super().__init__()
+#         # self.menu = QMenu()
+#         self.add_actions()
+#
+#     # def add_actions(self):
+#     #     print("add_actions method meant to overloaded")
+#
+#     def show(self):
+#         action = self.exec(list_widget.mapToGlobal(position))
 
-    if action == action1:
-        print("Action 1 selected")
-    elif action == action2:
-        print("Action 2 selected")
+
+def showContextMenu(position, list_widget):
+    ContextMenu(position, list_widget)
 
 
 class AbstractListPanel(QWidget):
@@ -66,8 +71,10 @@ class AbstractListPanel(QWidget):
         self.populate_element_list()
         self.layout.addWidget(self.element_list)
         # context menu
+        self.context_menu = QMenu()
         self.element_list.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.element_list.customContextMenuRequested.connect(lambda pos: showContextMenu(pos, self.element_list))
+        self.element_list.customContextMenuRequested.connect(
+                lambda pos: self.context_menu.exec(self.element_list.mapToGlobal(pos)))
 
         # buttons
         bottom_buttons_layout = QHBoxLayout()
