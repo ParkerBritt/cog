@@ -1,16 +1,34 @@
 import os
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QWidget, QHBoxLayout, QPushButton, QLineEdit, QSpacerItem, QSizePolicy, QListWidget, QListWidgetItem, QSpinBox, QTextEdit, QScrollArea, QMenu
-from PySide6.QtGui import QIcon, QFont
-from PySide6.QtCore import QSize, Qt
-from ..utils import shot_utils, file_utils, interface_utils, fonts
 
-# -- Object Selector -- 
-def showContextMenu(position, list_widget):
-    ContextMenu(position, list_widget)
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QFont, QIcon
+from PySide6.QtWidgets import (
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QMenu,
+    QPushButton,
+    QScrollArea,
+    QSizePolicy,
+    QSpacerItem,
+    QSpinBox,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
+
+from ....utils import file_utils, fonts, interface_utils, shot_utils
+
+# -- Object Selector --
+# def showContextMenu(position, list_widget):
+#     ContextMenu(position, list_widget)
 
 
 class AbstractListPanel(QWidget):
-    def __init__(self, tree_widget = None, info_widget = None, parent=None):
+    def __init__(self, tree_widget=None, info_widget=None, parent=None):
         super().__init__(parent)
         # assign argument variables
         self.tree_widget = tree_widget
@@ -49,12 +67,13 @@ class AbstractListPanel(QWidget):
         spacer = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Preferred)
         self.layout.addItem(spacer)
 
-
         self.element_list = QListWidget()
         self.element_list.setSortingEnabled(True)
-        self.element_list.itemSelectionChanged.connect(self.on_element_selection_changed)
+        self.element_list.itemSelectionChanged.connect(
+            self.on_element_selection_changed
+        )
         self.element_list.setAlternatingRowColors(True)
-        self.element_list.setIconSize(QSize(500,50))
+        self.element_list.setIconSize(QSize(500, 50))
         self.populate_element_list()
         self.layout.addWidget(self.element_list)
         # context menu
@@ -63,12 +82,12 @@ class AbstractListPanel(QWidget):
         self.context_menu.setStyleSheet(style_sheet)
         self.element_list.setContextMenuPolicy(Qt.CustomContextMenu)
         self.element_list.customContextMenuRequested.connect(
-                lambda pos: self.context_menu.exec(self.element_list.mapToGlobal(pos)))
+            lambda pos: self.context_menu.exec(self.element_list.mapToGlobal(pos))
+        )
 
         # buttons
         bottom_buttons_layout = QHBoxLayout()
         bottom_buttons_layout.addStretch()
-
 
         self.element_refresh_button = QPushButton("Refresh")
         self.element_refresh_button.clicked.connect(self.populate_element_list)
@@ -89,15 +108,15 @@ class AbstractListPanel(QWidget):
     def on_search_changed(self, search_text):
         for element_index in range(self.element_list.count()):
             element_item = self.element_list.item(element_index)
-            if(not search_text.lower() in element_item.text().lower()):
+            if not search_text.lower() in element_item.text().lower():
                 element_item.setHidden(True)
             else:
                 element_item.setHidden(False)
 
     def on_element_selection_changed(self):
-        if(self.info_widget):
+        if self.info_widget:
             self.info_widget.update(self.element_list)
-        if(self.tree_widget):
+        if self.tree_widget:
             self.tree_widget.populate_file_tree()
 
     def update_element_info():
@@ -106,8 +125,8 @@ class AbstractListPanel(QWidget):
     def populate_element_list(self):
         # check for previous selection
         prev_selected_items = self.element_list.selectedItems()
-        has_prev_selection = len(prev_selected_items)!=0
-        if(has_prev_selection):
+        has_prev_selection = len(prev_selected_items) != 0
+        if has_prev_selection:
             prev_selected_text = prev_selected_items[0].text()
 
         # clear contents
@@ -120,14 +139,14 @@ class AbstractListPanel(QWidget):
             item = QListWidgetItem(item_label, self.element_list)
             # item.setData(role_mapping["element_data"], element)
             interface_utils.set_list_widget_data(item, element_data)
-            thumbnail_path = os.path.join(element_data["dir"],"thumbnail.png")
+            thumbnail_path = os.path.join(element_data["dir"], "thumbnail.png")
             # print("thumbnail path", thumbnail_path)
             item.setIcon(QIcon(thumbnail_path))
 
-            if(has_prev_selection and item_label == prev_selected_text):
+            if has_prev_selection and item_label == prev_selected_text:
                 item.setSelected(True)
-            
-        if(not has_prev_selection):
+
+        if not has_prev_selection:
             self.element_list.setCurrentRow(0)
 
     def set_elements(self):
@@ -137,19 +156,20 @@ class AbstractListPanel(QWidget):
         print("on_element_add method meant to be overloaded")
 
     def on_element_delete(self):
-        print('element delete')
+        print("element delete")
         quick_dialog(self, "Deleting elements isn't implemented yet")
+
 
 class NewObjectInterface(QDialog):
     def __init__(self, parent=None, element_list=None, edit=False, element_data=None):
         super().__init__(parent)
         self.setWindowFlags(Qt.Window)
         self.setWindowTitle("New Object")
-        self.resize(400,600)
+        self.resize(400, 600)
         self.element_list = element_list
 
         # edit mode stuff
-        self.edit_mode=edit
+        self.edit_mode = edit
         self.existing_element_data = element_data
 
         self.initUI()
@@ -157,7 +177,6 @@ class NewObjectInterface(QDialog):
     def initUI(self):
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
-
 
         # if(self.existing_element_data):
         #     self.fill_existing_values()
@@ -179,7 +198,7 @@ class NewObjectInterface(QDialog):
     def create_bottom_buttons():
         # bottom buttons
         bottom_buttons_layout = QHBoxLayout()
-        bottom_button_min_size = (50,30)
+        bottom_button_min_size = (50, 30)
         ok_button = QPushButton("ok")
         cancel_button = QPushButton("cancel")
         ok_button.clicked.connect(self.on_ok_pressed)
@@ -207,22 +226,18 @@ class NewObjectInterface(QDialog):
 
         # format shot data in dictionary
         self.new_shot_data = {
-            "shot_num":shot_num,
-            "start_frame":start_frame,
-            "end_frame":end_frame,
-            "description":shot_desc,
-            "res_width":res_width,
-            "res_height":res_height,
-            "fps":fps
+            "shot_num": shot_num,
+            "start_frame": start_frame,
+            "end_frame": end_frame,
+            "description": shot_desc,
+            "res_width": res_width,
+            "res_height": res_height,
+            "fps": fps,
         }
 
-
-        self.shot_file_name = "SH"+str(shot_num).zfill(4)
+        self.shot_file_name = "SH" + str(shot_num).zfill(4)
         self.close()
 
     def on_cancel_pressed(self):
         self.finished_status = 1
         self.close()
-
-
-
