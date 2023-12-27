@@ -79,6 +79,7 @@ QScrollArea, QScrollBar {
 
 QMenu {
     margin: 4px; /* Spacing between items */
+    background-color: #2a2e32;
 }
 
 /* Qmenu */
