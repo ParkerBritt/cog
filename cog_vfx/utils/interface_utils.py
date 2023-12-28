@@ -13,12 +13,15 @@ def set_list_widget_data(list_item, data):
     list_item.setData(role_mapping["item_data"], data)
 
 
-def get_list_widget_data(list_widget, item=None):
+def get_list_widget_data(list_widget=None, item=None):
     if item == None:
+        if list_widget == None:
+            raise Exception("get_list_widget function called without list or list item")
         selected_items = list_widget.selectedItems()
         # print("selected items", selected_items)
         if len(selected_items) == 0:
-            return
+            print("list is empty")
+            return 1
         selected_item = selected_items[0]
     else:
         selected_item = item

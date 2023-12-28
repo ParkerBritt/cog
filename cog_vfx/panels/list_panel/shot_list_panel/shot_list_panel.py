@@ -6,6 +6,7 @@ from ....utils.file_utils import get_pkg_asset_path
 from ....utils.houdini_wrapper import launch_houdini, launch_hython
 from ....utils.interface_utils import get_list_widget_data
 from ..abstract_list_panel.abstract_list_panel import AbstractListPanel
+from .dialogs.new_shot_dialog import NewShotDialog
 
 
 # handle actions
@@ -59,21 +60,26 @@ class ShotListPanel(AbstractListPanel):
         self.elements = shot_utils.get_shots()
 
     def on_element_add(self):
-        print("shot add dialog")
-        self.new_shot_dialog = NewElementDialog(
-            self.element_list, edit=False, element_name="Shots"
-        )
-        self.new_shot_dialog.add_spin_box("FPS", "fps", 10)
-        self.new_shot_dialog.add_double_spin_box(
-            "Frame Range", ("start_frame", "end_frame"), 1001, 1100
+        self.new_shot_dialog = NewShotDialog(
+            self.element_list, edit=False, info_widget=self.info_widget
         )
         self.new_shot_dialog.exec()
 
-    def old_on_elemend_add(self):
-        # file_utils.new_object("SH030")
-        # self.populate_object_list()
-        print("shot add")
-        self.new_object = NewShotInterface(self, self.object_list)
-        # self.new_object.finished.connect(self.on_object_add_finished)
-        # self.new_object.show()
-        self.new_object.exec()
+        finished_status = self.new_shot_dialog.finished_status
+        if finished_status == 0:  # if new shot created
+            self.populate_element_list()
+
+    def on_element_edit(self):
+        selected_items = self.element_list.selectedItems()
+        if len(selected_items) == 0:
+            print("no shot selected for editing")
+            return
+
+        element_list = parent.element_list
+        selected_shot_data = get_list_widget_data(element_list)
+
+        self.edit_shot_window = NewShotInterface(
+            self, self.element_list, edit=True, shot_data=selected_shot_data
+        )
+        self.edit_shot_window.finished.connect(self.on_shot_edit_finished)
+        self.edit_shot_window.exec()

@@ -1,20 +1,25 @@
-import os, pkg_resources, json
+import json
+import os
+
+import pkg_resources
+
 
 def get_project_root():
-    return os.getenv("film_root")
+    project_root = os.getenv("film_root")
+    if project_root is None:
+        raise Exception("cannot find project root")
+    return project_root
 
 
-
-
-def get_assets(asset_name_filter = None):
+def get_assets(asset_name_filter=None):
     project_root = get_project_root()
     assets_path = os.path.join(project_root, "assets")
     asset_dirs = os.listdir(assets_path)
     asset_dirs.sort()
     assets = []
 
-    if(asset_name_filter):
-        if(asset_name_filter in asset_dirs):
+    if asset_name_filter:
+        if asset_name_filter in asset_dirs:
             asset_dirs = [asset_dirs[asset_dirs.index(asset_name_filter)]]
         else:
             print(f"\n\nERROR: {asset_name_filter} not in {asset_dirs}")
@@ -22,8 +27,8 @@ def get_assets(asset_name_filter = None):
 
     # ignore files starting with underscores '_'
     for i, asset_base_name in enumerate(asset_dirs):
-        if(asset_base_name.startswith("_")):
-           continue
+        if asset_base_name.startswith("_"):
+            continue
 
         asset_dir = os.path.join(assets_path, asset_base_name)
         current_asset = {}
@@ -42,18 +47,17 @@ def get_assets(asset_name_filter = None):
         else:
             print(f"File not found: {json_path}")
 
-        current_asset.update({
-            # "name":asset_base_name,
-            "dir":asset_dir,
-            "formatted_name":asset_base_name.replace("_"," ").title(),
-            "file_name":asset_base_name,
-            # "num":int(asset_base_name.split("SH")[1]),
-        })
+        current_asset.update(
+            {
+                # "name":asset_base_name,
+                "dir": asset_dir,
+                "formatted_name": asset_base_name.replace("_", " ").title(),
+                "file_name": asset_base_name,
+                # "num":int(asset_base_name.split("SH")[1]),
+            }
+        )
         # current_asset["file_name"] = asset_base_name
-
 
         assets.append(current_asset)
 
-            
     return assets
-

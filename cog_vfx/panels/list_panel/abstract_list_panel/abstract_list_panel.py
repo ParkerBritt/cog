@@ -115,11 +115,11 @@ class AbstractListPanel(QWidget):
 
     def on_element_selection_changed(self):
         if self.info_widget:
-            self.info_widget.update(self.element_list)
+            self.info_widget.update_panel_info(self.element_list)
         if self.tree_widget:
             self.tree_widget.populate_file_tree()
 
-    def update_element_info():
+    def update_element_info(self):
         pass
 
     def populate_element_list(self):
@@ -241,3 +241,9 @@ class NewObjectInterface(QDialog):
     def on_cancel_pressed(self):
         self.finished_status = 1
         self.close()
+
+    def on_element_add(self):
+        print("on_element_add method meant to be overriden")
+
+    def on_element_edit(self):
+        print("on_element_edit method meant to be overriden")

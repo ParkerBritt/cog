@@ -1,15 +1,27 @@
-from .utils import get_project_root
-import os, json
+import json
+import os
+import shutil
 
-def get_shots(shot_name_filter = None):
+from .utils import get_project_root
+
+
+def add_shot_file_data(shot_data):
+    project_root = get_project_root()
+    shots_path = os.path.join(project_root, "shots")
+    shot_base_name = "SH" + shot_data["shot_num"].zfill(4)
+    shot_full_path = os.path.join(shots_path, shot_base_name)
+    shot_data.update({"file_name": shot_base_name, "dir": shot_full_path})
+
+
+def get_shots(shot_name_filter=None):
     project_root = get_project_root()
     shots_path = os.path.join(project_root, "shots")
     shot_dirs = os.listdir(shots_path)
     shot_dirs.sort()
     shots = []
 
-    if(shot_name_filter):
-        if(shot_name_filter in shot_dirs):
+    if shot_name_filter:
+        if shot_name_filter in shot_dirs:
             shot_dirs = [shot_dirs[shot_dirs.index(shot_name_filter)]]
         else:
             print(f"\n\nERROR: {shot_name_filter} not in {shot_dirs}")
@@ -17,8 +29,8 @@ def get_shots(shot_name_filter = None):
 
     for i, shot_base_name in enumerate(shot_dirs):
         # ignore files starting with underscores '_'
-        if(shot_base_name.startswith("_")):
-           continue
+        if shot_base_name.startswith("_"):
+            continue
 
         shot_dir = os.path.join(shots_path, shot_base_name)
         current_shot = {}
@@ -37,20 +49,69 @@ def get_shots(shot_name_filter = None):
         else:
             print(f"File not found: {json_path}")
 
-        current_shot.update({
-            # "name":shot_base_name,
-            "dir":shot_dir,
-            "formatted_name":shot_base_name.split("SH")[1],
-            # "num":int(shot_base_name.split("SH")[1]),
-        })
-        if("shot_num" in current_shot):
-            current_shot["file_name"] = "SH"+str(current_shot["shot_num"]).zfill(4)
+        current_shot.update(
+            {
+                # "name":shot_base_name,
+                "dir": shot_dir,
+                "formatted_name": shot_base_name.split("SH")[1],
+                # "num":int(shot_base_name.split("SH")[1]),
+            }
+        )
+        if "shot_num" in current_shot:
+            current_shot["file_name"] = "SH" + str(current_shot["shot_num"]).zfill(4)
         else:
             current_shot["file_name"] = shot_base_name
 
-
         shots.append(current_shot)
 
-            
     return shots
 
+
+def move_shot(qt_parent, source_shot_name, dest_shot_name):
+    from .interface_utils import quick_dialog
+
+    # find paths
+    root_path = get_project_root()
+    shots_path = os.path.join(root_path, "shots")
+    source_dir = os.path.join(shots_path, source_shot_name)
+    dest_dir = os.path.join(shots_path, dest_shot_name)
+    print(f"moving {source_dir} to {dest_dir}")
+    if not os.path.exists(source_dir):
+        print(f"ERROR: source dir: {source_dir} not found")
+        return
+    if os.path.exists(dest_dir):
+        quick_dialog(
+            qt_parent,
+            f"{dest_shot_name} already exists.\nCancelling shot move.",
+            "Can't move Shot",
+        )
+        return
+    print("TARGET DIR", source_dir)
+    print("DEST DIR", dest_dir)
+
+    shutil.move(source_dir, dest_dir)
+
+    return dest_dir
+
+
+def make_shot_json(save_path, shot_data):
+    # json dump
+    json_save_path = save_path
+    json_data = json.dumps(shot_data, indent=4)
+    with open(json_save_path, "w") as file:
+        file.write(json_data)
+
+
+def edit_shot_json(save_path, edit_shot_data):
+    json_save_path = save_path
+
+    with open(json_save_path, "r") as file:
+        shot_data = json.load(file)
+    shot_data.update(edit_shot_data)
+
+    json_data = json.dumps(shot_data, indent=4)
+    with open(json_save_path, "w") as file:
+        file.write(json_data)
+
+    # return updated shot data
+    return shot_data

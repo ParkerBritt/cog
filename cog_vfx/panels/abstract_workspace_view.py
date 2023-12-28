@@ -157,6 +157,8 @@ class AbstractWorkspaceView(QWidget):
 
         # fetch directory path
         sel_element_data = get_list_widget_data(self.element_list)
+        if isinstance(sel_element_data, int):  # check for get_list_widget_data() error
+            return
 
         if sel_element_data is None:
             raise Exception("ERROR:", "no element selected")
