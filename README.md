@@ -18,7 +18,8 @@ Cog is a **pipeline interface for VFX** and animation specifically designed for 
 Because Cog is tailoured to our team's specific needs and built around other tools, it may not fit all use cases or environments.
 
 ![image](https://github.com/bluejamm/cog/assets/77124738/306567c5-e39f-4c3d-baf3-2b00e628af1c)
-
+> **Warning**  
+> Cog is in very early stage of development. It likely will never be in a state to be used publicly.
 
 ## Features
 - **Cross platform**
