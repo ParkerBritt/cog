@@ -23,6 +23,11 @@ class ShotInfoPanel(AbstractInfoPanel):
         self.create_sections()
         self.create_bottom_buttons()
 
+    # def on_object_edit(self):
+    #     asset_list =
+    #     self.edit_asset_window = NewAssetInterface(self, shot_list, edit=True, asset_data=selected_asset_data)
+    #     self.edit_asset_window.exec()
+
     def create_sections(self):
         # thumbnail
         thumbnail_dir = get_pkg_asset_path("assets/icons/missing_shot_thumbnail.png")

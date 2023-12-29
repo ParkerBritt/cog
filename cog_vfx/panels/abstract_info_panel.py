@@ -101,7 +101,7 @@ class AbstractInfoPanel(QScrollArea):
         return new_section
 
     def on_object_edit(self):
-        pass
+        print("on_object_edit method meant to be overloaded")
 
     def create_bottom_buttons(self):
         self.layout.addStretch()

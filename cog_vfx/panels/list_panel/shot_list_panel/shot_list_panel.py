@@ -45,14 +45,14 @@ def handle_action_render(parent):
 
 class ShotListPanel(AbstractListPanel):
     def __init__(self, tree_widget=None, info_widget=None, parent=None):
-        super().__init__(tree_widget, info_widget, parent)
+        super().__init__(tree_widget, info_widget, parent, object_type="shot")
         self.context_menu_actions()
-        self.element_page_label.setText("Shots")
 
     def context_menu_actions(self):
         self.context_menu.addAction(
             "Open Shot", lambda: handle_action_open(self.element_list)
         )
+        self.context_menu.addAction("Edit Shot", lambda: self.on_element_edit())
         self.context_menu.addAction("Render Shot", lambda: handle_action_render(self))
         self.context_menu.addAction("Delete Shot", lambda: print("not yet implemented"))
 
@@ -75,11 +75,10 @@ class ShotListPanel(AbstractListPanel):
             print("no shot selected for editing")
             return
 
-        element_list = parent.element_list
+        element_list = self.element_list
         selected_shot_data = get_list_widget_data(element_list)
 
-        self.edit_shot_window = NewShotInterface(
-            self, self.element_list, edit=True, shot_data=selected_shot_data
+        self.edit_shot_window = NewShotDialog(
+            self.element_list, edit=True, info_widget=self.info_widget
         )
-        self.edit_shot_window.finished.connect(self.on_shot_edit_finished)
         self.edit_shot_window.exec()

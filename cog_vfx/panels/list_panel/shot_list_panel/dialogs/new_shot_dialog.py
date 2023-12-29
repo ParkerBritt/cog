@@ -18,7 +18,16 @@ class NewShotDialog(NewElementDialog):
         self.add_fields()
 
     def add_fields(self):
-        self.add_spin_box("Shot Number", "shot_num", 10)
+        shot_data = get_list_widget_data(self.element_list)
+        if shot_data == 1:
+            print("ERROR: cannot edit empty shot list")
+            return
+        self.add_spin_box(
+            "Shot Number",
+            "shot_num",
+            int(shot_data["shot_num"]) + (10 if not self.edit_mode else 0),
+            max_value=99999,
+        )
         self.add_spin_box("FPS", "fps", 24)
         self.add_double_spin_box("Resolution", ("res_width", "res_width"), 1001, 1100)
         self.add_double_spin_box(
@@ -94,6 +103,7 @@ class NewShotDialog(NewElementDialog):
 
         # update info pannel
         if self.info_widget:
+            print("\n\n\n\nUPDATING INFO PANNEL")
             self.info_widget.update_panel_info()
         print("edit finished")
 

@@ -24,7 +24,9 @@ class NewElementDialog(QDialog):
         info_widget=None,
     ):
         super().__init__(parent)
+        self.finished_status = 1
         self.info_widget = info_widget
+        print("\n\n\n\nINFO WIDGET", info_widget)
         self.element_name = element_name
         self.setWindowTitle("New " + self.element_name)
         self.resize(400, 600)
@@ -71,11 +73,11 @@ class NewElementDialog(QDialog):
         spin_box = QSpinBox()
         self.mainLayout.insertWidget(self.mainLayout.count() - 2, spin_box)
 
-        spin_box.setValue(default_value)
         if min_value:
             spin_box.setMinimum(min_value)
         if max_value:
             spin_box.setMaximum(max_value)
+        spin_box.setValue(default_value)
         self.input_fields.append(
             {
                 "widget": spin_box,

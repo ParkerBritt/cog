@@ -94,6 +94,67 @@ def move_shot(qt_parent, source_shot_name, dest_shot_name):
     return dest_dir
 
 
+def copy_template(template_path, dest_root):
+    file_list = []
+
+    def filter(file):
+        blacklist_names = ["backup"]
+        # return True
+        # return True if file[:2] != "__" else False
+        if file in blacklist_names:
+            return False
+        # if file[:2] == "__":  # ignores __prefix
+        #     return False
+        return True
+
+    for root, dirs, files in os.walk(template_path):
+        dirs[:] = [d for d in dirs if filter(d)]
+        files = [f for f in files if filter(f)]
+
+        for d in dirs:
+            src_path = os.path.join(root, d)
+            dst_path = os.path.join(dest_root, os.path.relpath(src_path, template_path))
+
+            if not os.path.exists(dst_path):
+                os.makedirs(dst_path)
+
+        for file in files:
+            src_path = os.path.join(root, file)
+            dst_path = os.path.join(dest_root, os.path.relpath(src_path, template_path))
+            dst_dir = os.path.dirname(dst_path)
+            if not os.path.exists(dst_dir):
+                os.makedirs(dst_dir)
+            shutil.copy2(src_path, dst_path)
+
+            # print("dst_path:", dst_path)
+
+
+def new_shot(qt_parent, shot_name, shot_data=None):
+    from .interface_utils import quick_dialog
+
+    print(f"creating new shot: {shot_name}")
+    # find paths
+    root_path = get_project_root()
+    shots_path = os.path.join(root_path, "shots")
+    template_path = os.path.join(shots_path, "_template")
+    dest_root = os.path.join(shots_path, shot_name)
+
+    # check paths
+    if os.path.exists(dest_root):
+        print(f"ERROR: file {dest_root} already exists, cancelling shot creation")
+        quick_dialog(
+            qt_parent,
+            f"ERROR: file {dest_root} already exists, cancelling shot creation",
+            "Can't Create Shot",
+        )
+        return None
+
+    print(f"using template {template_path}, copying to {dest_root}")
+    copy_template(template_path, dest_root)
+    if shot_data:
+        make_shot_json(os.path.join(dest_root, "shot_data.json"), shot_data)
+
+
 def make_shot_json(save_path, shot_data):
     # json dump
     json_save_path = save_path

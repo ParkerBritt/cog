@@ -28,9 +28,12 @@ from ....utils import file_utils, fonts, interface_utils, shot_utils
 
 
 class AbstractListPanel(QWidget):
-    def __init__(self, tree_widget=None, info_widget=None, parent=None):
+    def __init__(
+        self, tree_widget=None, info_widget=None, parent=None, object_type="object"
+    ):
         super().__init__(parent)
         # assign argument variables
+        self.object_type = object_type
         self.tree_widget = tree_widget
         self.info_widget = info_widget
         self.elements = []
@@ -49,7 +52,7 @@ class AbstractListPanel(QWidget):
         print(" MAXIMUM SIZE:", self.minimumSizeHint().width())
 
         # Label
-        self.element_page_label = QLabel("Elements")
+        self.element_page_label = QLabel(self.object_type.title() + "s")
         self.element_page_label.setFont(self.fonts["header"])
         self.layout.addWidget(self.element_page_label)
 
@@ -135,7 +138,7 @@ class AbstractListPanel(QWidget):
         # create new elements
         self.set_elements()
         for element_data in self.elements:
-            item_label = "Object " + element_data["formatted_name"]
+            item_label = self.object_type.title() + " " + element_data["formatted_name"]
             item = QListWidgetItem(item_label, self.element_list)
             # item.setData(role_mapping["element_data"], element)
             interface_utils.set_list_widget_data(item, element_data)
@@ -210,37 +213,6 @@ class NewObjectInterface(QDialog):
         bottom_buttons_layout.addWidget(ok_button)
         bottom_buttons_layout.addWidget(cancel_button)
         self.layout.addLayout(bottom_buttons_layout)
-
-    def on_ok_pressed(self):
-        print("ok_pressed")
-        # get shot data in variables from widgets
-        self.finished_status = 0
-
-        start_frame = self.select_start_frame.value()
-        end_frame = self.select_end_frame.value()
-        shot_num = self.select_shot_num.value()
-        res_width = self.select_res_width.value()
-        res_height = self.select_res_height.value()
-        fps = self.select_fps.value()
-        shot_desc = self.shot_description_box.toPlainText()
-
-        # format shot data in dictionary
-        self.new_shot_data = {
-            "shot_num": shot_num,
-            "start_frame": start_frame,
-            "end_frame": end_frame,
-            "description": shot_desc,
-            "res_width": res_width,
-            "res_height": res_height,
-            "fps": fps,
-        }
-
-        self.shot_file_name = "SH" + str(shot_num).zfill(4)
-        self.close()
-
-    def on_cancel_pressed(self):
-        self.finished_status = 1
-        self.close()
 
     def on_element_add(self):
         print("on_element_add method meant to be overriden")
