@@ -204,7 +204,7 @@ class AbstractWorkspaceView(QWidget):
             for file_name in files:
                 file_item = QTreeWidgetItem(parent_item)
                 file_item.setText(FILE_NAME_COL, file_name)
-                file_item.setToolTip(FILE_NAME_COL, "P4: Checked Out")
+                file_item.setToolTip(FILE_NAME_COL, "P4:")
 
                 # data
                 file_type = os.path.splitext(file_name)[1]
