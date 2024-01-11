@@ -29,13 +29,13 @@ class NewShotDialog(NewElementDialog):
             max_value=99999,
         )
         self.add_spin_box("FPS", "fps", 24)
-        self.add_double_spin_box("Resolution", ("res_width", "res_width"), 1001, 1100)
+        self.add_double_spin_box("Resolution", ("res_width", "res_height"), 1920, 1080)
         self.add_double_spin_box(
             "Frame Range", ("start_frame", "end_frame"), 1001, 1100
         )
         self.add_edit_box(
             "Description",
-            "descrption",
+            "description",
         )
 
     def on_exit(self):
@@ -62,11 +62,18 @@ class NewShotDialog(NewElementDialog):
         selected_shot = self.element_list.selectedItems()[0]
 
         # move shot
-        if (
-            not "shot_num" in old_shot_data
-            or old_shot_data["shot_num"] != edit_shot_data["shot_num"]
+        if not "shot_num" in old_shot_data or int(old_shot_data["shot_num"]) != int(
+            edit_shot_data["shot_num"]
         ):
-            print("\n\nSHOT NUMBER CHANGED!!!!")
+            print("\n\nSHOT NUMBER CHANGED")
+            print(
+                "previous shot number:",
+                old_shot_data["shot_num"],
+                type(old_shot_data["shot_num"]),
+                "new shot number",
+                edit_shot_data["shot_num"],
+                type(edit_shot_data["shot_num"]),
+            )
             # print(f"old_shot_data: {old_shot_data} \nnew_shot_data: {new_shot_data}")
             dest_shot_name = "SH" + str(edit_shot_data["shot_num"]).zfill(4)
             dest_dir = move_shot(self, shot_name, dest_shot_name)
@@ -104,7 +111,7 @@ class NewShotDialog(NewElementDialog):
         # update info pannel
         if self.info_widget:
             print("\n\n\n\nUPDATING INFO PANNEL")
-            self.info_widget.update_panel_info()
+            self.info_widget.update_panel_info(self.element_list)
         print("edit finished")
 
     def on_shot_add_finished(self):

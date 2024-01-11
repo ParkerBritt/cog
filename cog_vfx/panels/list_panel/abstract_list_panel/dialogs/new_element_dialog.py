@@ -118,11 +118,9 @@ class NewElementDialog(QDialog):
 
         if min_value:
             spin_box1.setMinimum(min_value)
-        if min_value:
             spin_box2.setMinimum(min_value)
         if max_value:
             spin_box1.setMaximum(max_value)
-        if max_value:
             spin_box2.setMaximum(max_value)
 
         spin_box1.setValue(default_value1)
@@ -148,7 +146,7 @@ class NewElementDialog(QDialog):
             field_key = field["update_key"]
             field_value = ""
             if isinstance(field_widget, QSpinBox):  # QSpinBox
-                field_value = field_widget.text()
+                field_value = int(field_widget.text())
             elif isinstance(field_widget, QTextEdit):
                 field_value = field_widget.toPlainText()
             new_element_data.update({field_key: field_value})
@@ -186,9 +184,23 @@ class NewElementDialog(QDialog):
     def fill_value(self, widget, value):
         # check that existing element data is list rather than a non zero error return
         if value in self.existing_element_data and isinstance(
-            self.existing_element_data, list
+            self.existing_element_data, dict
         ):
+            field_value = self.existing_element_data[value]
+            print("setting", widget, "to value:", field_value, "update_key:", value)
             if isinstance(widget, QTextEdit):
-                widget.setPlainText(self.existing_element_data[value])
+                widget.setPlainText(field_value)
             elif isinstance(widget, QSpinBox):
-                widget.setValue(self.existing_element_data[value])
+                widget.setValue(int(field_value))
+            else:
+                print("ERROR: filling edit box, type:", type(widget), "not handled")
+        else:
+            print("ERROR: Failed to fill existing values of dialog")
+            print(
+                "value",
+                value,
+                "in list",
+                self.existing_element_data,
+                ":",
+                value in self.existing_element_data,
+            )

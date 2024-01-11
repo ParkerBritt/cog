@@ -15,7 +15,8 @@ class ShotInfoPanel(AbstractInfoPanel):
             "fps",
             "shot_num",
             "description",
-            "resolution",
+            "res_width",
+            "res_height",
         ]
         self.update_data_mapping = None
 
@@ -39,7 +40,9 @@ class ShotInfoPanel(AbstractInfoPanel):
         self.frame_range = self.render_data_section.add_label(
             "Frame Range: {start_frame} - {end_frame}"
         )
-        self.render_res = self.render_data_section.add_label("Resolution: {resolution}")
+        self.render_res = self.render_data_section.add_label(
+            "Resolution: {res_width} x {res_height}"
+        )
         self.render_fps = self.render_data_section.add_label("FPS: {fps}")
         self.render_fps = self.render_data_section.add_label("test: {test}")
 

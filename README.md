@@ -5,7 +5,7 @@
 </a>
 </p>
 
-<h1 align="center">Cog VFX</h1>
+<h1 align="center">Cog Pipeline</h1>
 <p align="center"}>
   <img src="https://img.shields.io/badge/Qt-41CD52?style=for-the-badge&logo=qt&logoColor=white">
   <img src="https://img.shields.io/badge/Python-FFD43B?style=for-the-badge&logo=python&logoColor=blue">
@@ -19,7 +19,7 @@ Because Cog is tailoured to our team's specific needs and built around other too
 
 ![image](https://github.com/bluejamm/cog/assets/77124738/306567c5-e39f-4c3d-baf3-2b00e628af1c)
 > **Warning**  
-> Cog is in very early stage of development. It likely will never be in a state to be used publicly.
+> Cog is in a very early stage of development. It likely will never be in a state to be used publicly.
 
 ## Features
 - **Cross platform**
