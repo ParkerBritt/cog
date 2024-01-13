@@ -1,7 +1,7 @@
 # general
 import os
 
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import QSize, Qt, QThread
 from PySide6.QtGui import QIcon
 
 # pyside
@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
 )
 
 # project modules
-from ..utils import (
+from ....utils import (
     filter_env_vars,
     get_fonts,
     get_list_widget_data,
@@ -26,6 +26,7 @@ from ..utils import (
     get_style_sheet,
     open_file,
 )
+from ....utils.p4utils import get_file_info as p4_get_file_info
 
 role_mapping = {
     "item_data": Qt.UserRole + 1,
@@ -73,13 +74,14 @@ class AbstractWorkspaceView(QWidget):
         self.role_layout = QHBoxLayout()
         self.file_tree_layout.addLayout(self.role_layout)
         self.role_button_group = QButtonGroup()
-        self.init_role_buttons()
 
         # init file tree
         self.file_tree = QTreeWidget()
         self.file_tree.setColumnCount(0)
-        self.file_tree.setHeaderLabels([""])
+        self.file_tree.setHeaderLabels(["File Name"])
         self.file_tree_layout.addWidget(self.file_tree)
+
+        self.init_role_buttons()
 
         # init context menu
         # self.context_menu = QMenu()
@@ -135,20 +137,20 @@ class AbstractWorkspaceView(QWidget):
         self.populate_file_tree()
 
     def init_icons(self):
+        def get_icon(file_name):
+            file_icons_path = "assets/icons/file_icons"
+            return QIcon(get_pkg_asset_path(os.path.join(file_icons_path, file_name)))
+
         # icons
-        self.icon_file = QIcon(get_pkg_asset_path("assets/icons/file_white.png"))
-        self.icon_dir_full = QIcon(
-            get_pkg_asset_path("assets/icons/folder_open_white.png")
-        )
-        self.icon_dir_empty = QIcon(
-            get_pkg_asset_path("assets/icons/folder_closed_white.png")
-        )
+        self.icon_file = get_icon("file_white.png")
+        self.icon_dir_full = get_icon("folder_open_white.png")
+        self.icon_dir_empty = get_icon("folder_closed_white.png")
         self.file_name_icon_mapping = {
-            "anim.mb": QIcon(get_pkg_asset_path("assets/icons/animation_white.png")),
-            "scene.hipnc": QIcon(get_pkg_asset_path("assets/icons/scene_white.png")),
+            "anim.mb": get_icon("animation_white.png"),
+            "scene.hipnc": get_icon("scene_white.png"),
         }
         self.file_type_icon_mapping = {
-            ".hipnc": QIcon(get_pkg_asset_path("assets/icons/houdini_white.png")),
+            ".hipnc": get_icon("houdini_white.png"),
         }
 
     def populate_file_tree(self):
@@ -173,6 +175,7 @@ class AbstractWorkspaceView(QWidget):
 
         # walk through files
         path_to_item = {}
+        self.files = []
         for root, dirs, files in os.walk(directory_path):
             # filter top level directories
             # if(root == directory_path):
@@ -204,7 +207,9 @@ class AbstractWorkspaceView(QWidget):
             for file_name in files:
                 file_item = QTreeWidgetItem(parent_item)
                 file_item.setText(FILE_NAME_COL, file_name)
-                file_item.setToolTip(FILE_NAME_COL, "P4: Checked Out")
+                p4_status = "None"
+                file_item.setToolTip(FILE_NAME_COL, "P4: " + p4_status)
+                self.files.append(file_item)
 
                 # data
                 file_type = os.path.splitext(file_name)[1]
@@ -229,3 +234,39 @@ class AbstractWorkspaceView(QWidget):
             # print("root:",root)
             # print("dirs:", dirs)
             # print("files:", files)
+        self.populate_p4_status()
+
+    def populate_p4_status(self):
+        if hasattr(self, "populate_p4_status_thread"):
+            self.populate_p4_status_thread.stop()
+            self.populate_p4_status_thread.wait()
+        self.populate_p4_status_thread = populate_p4_status_thread(self.files)
+        self.populate_p4_status_thread.start()
+
+        # print("file paths", file_paths)
+        # for file in self.files:
+        #     print("file data", get_tree_item_data(file)["file_path"])
+
+
+class populate_p4_status_thread(QThread):
+    def __init__(self, file_items):
+        super().__init__()
+        self._is_running = True
+        self.file_items = file_items
+
+    def stop(self):
+        self._is_running = False
+
+    def run(self):
+        file_paths = [get_tree_item_data(file)["file_path"] for file in self.file_items]
+        if not self._is_running:
+            return
+        file_p4_info = p4_get_file_info(file_paths)
+        if not self._is_running:
+            return
+        print("file_paths", file_paths)
+        print("p4 info", file_p4_info)
+        for i, file_info in enumerate(file_p4_info):
+            if not self._is_running:
+                return
+            self.file_items[i].setToolTip(FILE_NAME_COL, file_info["status"])

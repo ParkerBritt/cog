@@ -1,4 +1,5 @@
-from .abstract_workspace_view import AbstractWorkspaceView
+from ..abstract_workspace_view.abstract_workspace_view import AbstractWorkspaceView
+
 
 class ShotWorkspaceView(AbstractWorkspaceView):
     def __init__(self, list_panel):
