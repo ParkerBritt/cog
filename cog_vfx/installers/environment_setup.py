@@ -3,18 +3,29 @@ import platform
 import subprocess
 import sys
 
-import hou
+from PySide6.QtWidgets import (
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 
-def main(kwargs):
+def main():
     print("\n\n\n--------- Starting Install -------------")
-    installPrompt(kwargs)
+    main_window = install_dialog()
+    return main_window
 
+
+def install_sequence():
     print("\n\n-------- Installing Houdini Package --------")
-    installPackage(kwargs)
+    install_houdini_package()
+    return
 
     print("\n\n------- Making Perforce Config File ---------")
-    make_p4_config()
+    # make_p4_config()
 
     # Set Environment variables
     print("\n\n------- Setting Environment Variables --------")
@@ -25,21 +36,6 @@ def main(kwargs):
 
     # Show success message
     print("\n-- install finished successfully -- ")
-
-
-# def install_hython_package(package_name):
-#     print("installing package:", package_name)
-#
-#     # Run the pip install command with the Python interpreter found by sys.executable
-#     interpreter = hou.getenv("HFS")+"/bin/hython"
-#     if platform.system() == 'Windows':
-#         interpreter+=".exe"
-#     if(not os.path.exists(interpreter)):
-#         print(f"Interpreter not at path: {interpreter}")
-#         return
-#     cmd = [interpreter, '-m', 'pip', 'install', package_name]
-#     print("running command:", cmd)
-#     print(subprocess.check_call(cmd))
 
 
 def set_environment_variable(key, value):
@@ -61,65 +57,148 @@ def set_environment_variable(key, value):
         )
 
 
-def installPrompt(kwargs):
-    node = kwargs["node"]
-    install_window_choice = hou.ui.displayMessage(
-        "Install 2AM Houdini package?",
-        buttons=("Install", "Cancel"),
-        severity=hou.severityType.Message,
-        default_choice=0,
-        close_choice=1,
-        title="2AM Install",
-    )
-    if install_window_choice != 0:
-        print("install cancelled")
-        exit()
+class ErrorDialog(QDialog):
+    def __init__(self, error_message):
+        self.main_layout = QVBoxLayout()
+        self.setMaximumSize(320, 120)
+        self.setWindowTitle("Environment Setup Error")
+
+        message = "An error occured while trying to setup your environment"
+        message += error_message
+        self.main_layout.addWidget(QLabel(message))
 
 
-def installPackage(kwargs):
-    # Set default node name, action (for pop up window) color, and shape
-    node = kwargs["node"]
-    node_name = "Installed"
-    action = "Install"
-    installed_node_color = hou.Color((0.18, 1, 0.34))
-    updated_node_color = hou.Color((0.18, 1, 1))
-    node.setColor(installed_node_color)
-    # node.setUserData('nodeshape', 'light')
+class InstallDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
 
-    # This is the path to this HDA
-    # filepath = node.type().definition().libraryFilePath()
-    hip = hou.getenv("HIP")
+    def initUI(self):
+        # -- setup window --
+        self.main_layout = QVBoxLayout()
+        self.setMaximumSize(320, 120)
+        self.setWindowTitle("Environment Setup")
+        self.setLayout(self.main_layout)
 
-    # From that we know where the houdini root folder and the package folder we want to add is
-    houdini_path = f"{hip}/../packages/2AM/houdini"
-    houdini_path = os.path.normpath(houdini_path)
-    package_path = "{houdini_path}/packages".format(houdini_path=houdini_path)
-    print("houdini_path:", houdini_path)
+        # -- main text --
+        self.main_layout.addWidget(
+            QLabel(
+                "Your environment is not properly configured\nwould you like to perform the setup now?"
+            )
+        )
+
+        # -- make buttons --
+        self.make_buttons()
+
+    def make_buttons(self):
+        # make button layout
+        self.button_layout = QHBoxLayout()
+        self.main_layout.addLayout(self.button_layout)
+        # make button widgets
+        self.ok_button = QPushButton("Ok")
+        self.ok_button.clicked.connect(install_sequence)
+        self.cancel_button = QPushButton("Cancel")
+        self.cancel_button.clicked.connect(self.close)
+        # add buttons to layout
+        self.button_layout.addWidget(self.ok_button)
+        self.button_layout.addWidget(self.cancel_button)
+
+
+def install_dialog():
+    dialog_window = InstallDialog()
+    # dialog_window.exec()
+    dialog_window.show()
+    return dialog_window
+    # node = kwargs["node"]
+    # install_window_choice = hou.ui.displayMessage(
+    #     "Install 2AM Houdini package?",
+    #     buttons=("Install", "Cancel"),
+    #     severity=hou.severityType.Message,
+    #     default_choice=0,
+    #     close_choice=1,
+    #     title="2AM Install",
+    # )
+    # if install_window_choice != 0:
+    #     print("install cancelled")
+    #     exit()
+
+
+def install_houdini_package():
+    # assuming a uniform houdini install path for now
+    # -- fetching paths --
+    OS = platform.system()
+    if OS == "Linux":
+        HFS = "/opt/hfs19.5.605"
+
+        home_path = os.getenv("HOME")
+        if not home_path:
+            raise Exception("environment variable 'HOME' is empty")
+        project_root = home_path + "/Perforce/y3-film"
+    elif OS == "Windows":
+        HFS = r"C:/PROGRAM FILES/Side Effects Software/Houdini 19.5.603"
+
+        home_path = os.getenv("USERPROFILE")
+        if not home_path:
+            raise Exception("environment variable 'HOME' is empty")
+        project_root = home_path + r"\Perforce\y3-film"
+    else:
+        raise Exception("unknown OS: " + OS)
+
+    # -- check for valid paths
+    if not os.path.exists(HFS):
+        raise Exception("file does not exits, expected HFS: " + HFS)
+    if not os.path.exists(project_root):
+        raise Exception("file does not exits, expected project root: " + project_root)
+
+    # -- print new paths --
+    print("OS:", OS)
+    print("Houdini install path:", HFS)
+    print("Project root:", project_root)
+
+    # -- find package and subpackage path --
+    package_path = project_root + "/packages/2AM/houdini"
+    package_path = os.path.normpath(package_path)
+    sub_package_path = f"{package_path}/packages"
+    # print new paths
     print("package_path:", package_path)
+    print("sub_package_path:", sub_package_path)
 
-    # Get the json template from the Extra Files section
-    package_content = node.type().definition().sections()["PACKAGE_TEMPLATE"].contents()
-    package_content = package_content.replace("@___HOUDINI_PATH___@", houdini_path)
-    package_content = package_content.replace("@___PACKAGE_PATH___@", package_path)
-    # Set this HDA's string parms to show what the additions will be
-    node.parm("houdini_path").set(houdini_path)
-    node.parm("package_path").set(package_path)
+    # -- create package content --
+    package_content = f"""{{
+"path" : "{package_path}",
+"package_path" : "{sub_package_path}"
+}}"""
+    print("package content", package_content)
 
-    # Get the user prefs package directory and create the directory if it does not exist
-    user_pref_dir = hou.getenv("HOUDINI_USER_PREF_DIR")
-    package_directory = "{user_pref_dir}/packages".format(user_pref_dir=user_pref_dir)
-    package_directory = os.path.normpath(package_directory)
-    print("package_directory", package_directory)
-    if not os.path.exists(package_directory):
-        os.makedirs(package_directory)
+    # -- get houdini env vars --
+    # run hython command to get path
+    hython_path = os.path.join(HFS, "bin/hython")
+    hython_command = (
+        "print('HOUDINI_USER_PREF_DIR=' + hou.getenv('HOUDINI_USER_PREF_DIR'))"
+    )
+    command_out = subprocess.run(
+        [hython_path, "-c", hython_command], capture_output=True, text=True
+    )
+    cmd_out_split = command_out.stdout.strip().split("=")
+    # form paths
+    houdini_pref_path = cmd_out_split[1]
+    houdini_package_path = os.path.join(houdini_pref_path, "packages")
+    # verify paths exists
+    if not os.path.exists(houdini_pref_path):
+        raise Exception(
+            "houdini preference path doesn't exist, expected: " + houdini_pref_path
+        )
+    if not os.path.exists(houdini_package_path):
+        os.makedirs(houdini_package_path)
+    # print paths
+    print("houdini preferences path")
+    print("houdini packgage path:", houdini_package_path)
 
     # Build the path to the package file. If the package file already exists set the action and color to updated
-    module_filepath = os.path.join(package_directory, "2AM.json")
+    module_filepath = os.path.join(houdini_package_path, "2AM.json")
     print("module_filepath", module_filepath)
     if os.path.exists(module_filepath):
-        node_name = "Updated"
-        action = "Update"
-        node.setColor(updated_node_color)
+        finished_status = "updated"
 
     # Write the package file
     with open(module_filepath, "w") as module_file:
@@ -127,8 +206,8 @@ def installPackage(kwargs):
 
     # Get the message template from the Extra Files section
     message = node.type().definition().sections()["SUCCESS_MESSAGE"].contents()
-    message = message.replace("@___HOUDINI_PATH___@", houdini_path)
-    message = message.replace("@___PACKAGE_PATH___@", package_path)
+    message = message.replace("@___HOUDINI_PATH___@", package_path)
+    message = message.replace("@___PACKAGE_PATH___@", sub_package_path)
     message = message.replace("@__NODE_NAME__@", node_name)
 
     # Set the node name
