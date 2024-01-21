@@ -82,7 +82,9 @@ class UpdateFinishedDialog(QDialog):
 def software_update(app):
     dist_dir = "//finalProjectDepot/finalProjectStream/pipeline/packages/2AM/cog/dist/"
     dist_file_depot = os.path.join(dist_dir, "cog_vfx-0.1.tar.gz")
-    file_info = p4utils.get_file_info(dist_file_depot)[0]
+    file_info = p4utils.get_file_info(dist_file_depot)
+    print("dist file info")
+    file_info = file_info[0]
     # check if update is needed
     if not check_updatable(file_info=file_info):
         return

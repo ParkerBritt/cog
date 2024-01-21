@@ -1,18 +1,24 @@
 /* set the general color scheme */
 * {
-    background-color: #2a2e32; /* dark background */
-    color: #fff; /* white text */
+    background-color: #2a2e32;
+    /* dark background */
+    color: #fff;
+    /* white text */
 }
 
 QLabel {
     background-color: rgba(255, 255, 255, 0);
 }
+
 /* buttons */
 QPushButton {
-    background-color: #3f4348; /* Darker grey for buttons */
-    color: #fff; /* White text */
+    background-color: #3f4348;
+    /* Darker grey for buttons */
+    color: #fff;
+    /* White text */
     border-radius: 8px;
-    padding: 5px 10px; /* Padding inside buttons */
+    padding: 5px 10px;
+    /* Padding inside buttons */
 }
 
 QPushButton:hover {
@@ -33,6 +39,7 @@ QHeaderView::section {
 QPushButton:checked {
     background-color: #777;
 }
+
 QSpinBox {
     background-color: #1b1e20;
 }
@@ -48,47 +55,93 @@ QTextEdit {
 
 /* QListWidget */
 QListWidget {
-    background-color: #1b1e20; /* Assuming you want a grey background for the list */
-    alternate-background-color: #2a2a2a; /* Darker grey for alternate items */
-    border-radius: 15px; /* Rounded corners for the QListWidget itself */
-    border: 1px solid #333; /* Optional border */
+    background-color: #1b1e20;
+    /* Assuming you want a grey background for the list */
+    alternate-background-color: #2a2a2a;
+    /* Darker grey for alternate items */
+    border-radius: 15px;
+    /* Rounded corners for the QListWidget itself */
+    border: 1px solid #333;
+    /* Optional border */
 }
 
 /* QListWidget items */
 QListWidget::item {
-    background-color: #333; /* Same as general background for items */
-    color: #fff; /* White text */
+    background-color: #333;
+    /* Same as general background for items */
+    color: #fff;
+    /* White text */
 }
 
 /* QListWidget alternating colors */
 QListWidget::item:alternate {
-    background-color: #1b1e20; /* Slightly lighter grey for alternate items */
+    background-color: #1b1e20;
+    /* Slightly lighter grey for alternate items */
 }
 
 /* QListWidget item */
 QListWidget::item:selected {
-    background-color: #1e90ff; /* Blue selection color */
+    background-color: #1e90ff;
+    /* Blue selection color */
     color: #fff;
 }
 
 
 /* scroll area */
-QScrollArea, QScrollBar {
-    background-color: #333; /* Same as general background */
+QScrollArea,
+QScrollBar {
+    background-color: #333;
+    /* Same as general background */
 }
 
 QMenu {
-    margin: 4px; /* Spacing between items */
+    margin: 4px;
+    /* Spacing between items */
     background-color: #2a2e32;
 }
 
 /* Qmenu */
 QMenu::item {
-    padding: 5px 20px; /* Padding for the text */
+    padding: 5px 20px;
+    /* Padding for the text */
     border-radius: 8px;
 }
 
 QMenu::item:selected {
-    background-color: #1e90ff; /* Blue selection color */
+    background-color: #1e90ff;
+    /* Blue selection color */
     color: #fff;
+}
+
+QTabWidget::pane {
+    /* The tab widget frame */
+    border-top: 2px solid #2a2e32;
+}
+
+QTabBar::tab {
+    background-color: #1d2023;
+    color: white;
+    /* Text color */
+    /* border: 1px solid #2a2e32; */
+    /* border-bottom-color: #2a2e32; */
+    /* Same as the pane color */
+    border-top-left-radius: 10px;
+    /* Rounded top-left corner */
+    border-top-right-radius: 10px;
+    /* Rounded top-right corner */
+    min-width: 1ex;
+    padding: 10px;
+}
+
+QTabBar::tab:selected,
+QTabBar::tab:hover {
+    background-color: #3f4348;
+    color: white;
+}
+
+QTabBar::tab:selected {
+    background-color: #777;
+    border-color: #777;
+    border-bottom-color: transparent;
+    /* Makes the tab merge with the pane */
 }

@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QPushButton,
     QVBoxLayout,
     QWidget,
@@ -14,25 +15,51 @@ from PySide6.QtWidgets import (
 
 
 def main():
-    print("\n\n\n--------- Starting Install -------------")
+    if not needs_install():
+        print("environment setup check passed")
+        return None
     main_window = install_dialog()
     return main_window
 
 
+def needs_install():
+    # return True  # for testing
+    return not bool(os.getenv("film_root"))
+
+
+def get_project_root():
+    OS = platform.system()
+    if OS == "Linux":
+        home_path = os.getenv("HOME")
+        if not home_path:
+            raise Exception("environment variable 'HOME' is empty")
+        project_root = home_path + "/Perforce/y3-film"
+    elif OS == "Windows":
+        home_path = os.getenv("USERPROFILE")
+        if not home_path:
+            raise Exception("environment variable 'USERPROFILE' is empty")
+        project_root = home_path + r"\Perforce\y3-film"
+    else:
+        raise Exception("unknown OS: " + OS)
+
+    return project_root
+
+
 def install_sequence():
+    print("\n\n\n--------- Starting Install -------------")
+    project_root = get_project_root()
+
     print("\n\n-------- Installing Houdini Package --------")
-    install_houdini_package()
-    return
+    install_houdini_package(project_root)
 
     print("\n\n------- Making Perforce Config File ---------")
-    # make_p4_config()
+    make_p4_config()
 
     # Set Environment variables
     print("\n\n------- Setting Environment Variables --------")
-    hip = hou.getenv("HIP")
-    p4ignore_path = os.path.normpath(f"{hip}/../perforce/p4ignore")
+    p4ignore_path = os.path.normpath(f"{project_root}/pipeline/perforce/p4ignore")
     set_environment_variable("P4IGNORE", p4ignore_path)
-    set_environment_variable("film_root", os.path.normpath(f"{hip}/../.."))
+    set_environment_variable("film_root", project_root)
 
     # Show success message
     print("\n-- install finished successfully -- ")
@@ -96,18 +123,21 @@ class InstallDialog(QDialog):
         self.main_layout.addLayout(self.button_layout)
         # make button widgets
         self.ok_button = QPushButton("Ok")
-        self.ok_button.clicked.connect(install_sequence)
+        self.ok_button.clicked.connect(self.on_ok_clicked)
         self.cancel_button = QPushButton("Cancel")
         self.cancel_button.clicked.connect(self.close)
         # add buttons to layout
         self.button_layout.addWidget(self.ok_button)
         self.button_layout.addWidget(self.cancel_button)
 
+    def on_ok_clicked(self):
+        self.close()
+        install_sequence()
+
 
 def install_dialog():
     dialog_window = InstallDialog()
-    # dialog_window.exec()
-    dialog_window.show()
+    dialog_window.exec()
     return dialog_window
     # node = kwargs["node"]
     # install_window_choice = hou.ui.displayMessage(
@@ -123,24 +153,14 @@ def install_dialog():
     #     exit()
 
 
-def install_houdini_package():
+def install_houdini_package(project_root):
     # assuming a uniform houdini install path for now
     # -- fetching paths --
     OS = platform.system()
     if OS == "Linux":
         HFS = "/opt/hfs19.5.605"
-
-        home_path = os.getenv("HOME")
-        if not home_path:
-            raise Exception("environment variable 'HOME' is empty")
-        project_root = home_path + "/Perforce/y3-film"
     elif OS == "Windows":
         HFS = r"C:/PROGRAM FILES/Side Effects Software/Houdini 19.5.603"
-
-        home_path = os.getenv("USERPROFILE")
-        if not home_path:
-            raise Exception("environment variable 'HOME' is empty")
-        project_root = home_path + r"\Perforce\y3-film"
     else:
         raise Exception("unknown OS: " + OS)
 
@@ -156,7 +176,7 @@ def install_houdini_package():
     print("Project root:", project_root)
 
     # -- find package and subpackage path --
-    package_path = project_root + "/packages/2AM/houdini"
+    package_path = project_root + "/pipeline/packages/2AM/houdini"
     package_path = os.path.normpath(package_path)
     sub_package_path = f"{package_path}/packages"
     # print new paths
@@ -165,8 +185,8 @@ def install_houdini_package():
 
     # -- create package content --
     package_content = f"""{{
-"path" : "{package_path}",
-"package_path" : "{sub_package_path}"
+    "path" : "{package_path}",
+    "package_path" : "{sub_package_path}"
 }}"""
     print("package content", package_content)
 
@@ -197,28 +217,83 @@ def install_houdini_package():
     # Build the path to the package file. If the package file already exists set the action and color to updated
     module_filepath = os.path.join(houdini_package_path, "2AM.json")
     print("module_filepath", module_filepath)
-    if os.path.exists(module_filepath):
-        finished_status = "updated"
+    install_type = "updating" if os.path.exists(module_filepath) else "installing"
 
     # Write the package file
     with open(module_filepath, "w") as module_file:
         module_file.write(package_content)
 
-    # Get the message template from the Extra Files section
-    message = node.type().definition().sections()["SUCCESS_MESSAGE"].contents()
-    message = message.replace("@___HOUDINI_PATH___@", package_path)
-    message = message.replace("@___PACKAGE_PATH___@", sub_package_path)
-    message = message.replace("@__NODE_NAME__@", node_name)
+    print(f"finished {install_type} houdini package".upper())
 
-    # Set the node name
-    node.setName(node_name)
+
+class P4_dialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def make_buttons(self):
+        # make button layout
+        self.button_layout = QHBoxLayout()
+        self.main_layout.addLayout(self.button_layout)
+        # make button widgets
+        self.ok_button = QPushButton("Ok")
+        self.ok_button.clicked.connect(self.on_ok_clicked)
+        self.cancel_button = QPushButton("Cancel")
+        self.cancel_button.clicked.connect(self.on_cancel_clicked)
+        # add buttons to layout
+        self.button_layout.addWidget(self.ok_button)
+        self.button_layout.addWidget(self.cancel_button)
+
+    def on_ok_clicked(self):
+        self.close_status = 1  # clicked ok
+        self.password = self.password_widget.text()
+        self.address = self.address_widget.text()
+        self.close()
+
+    def on_cancel_clicked(self):
+        self.close_status = 0  # clicked cancel
+        self.close()
+
+    def initUI(self):
+        self.main_layout = QVBoxLayout()
+        self.setLayout(self.main_layout)
+        self.setWindowTitle("P4 Login")
+        self.setMaximumSize(320, 120)
+
+        self.close_status = 0
+        self.main_layout.addWidget(QLabel("Enter P4 login. Make sure this is correct."))
+
+        password_layout = QHBoxLayout()
+        address_layout = QHBoxLayout()
+
+        self.password_widget = QLineEdit()
+        self.address_widget = QLineEdit()
+
+        password_layout.addWidget(QLabel("P4 Password:"))
+        password_layout.addWidget(self.password_widget)
+        address_layout.addWidget(QLabel("P4 Address:   "))
+        address_layout.addWidget(self.address_widget)
+
+        self.main_layout.addLayout(password_layout)
+        self.main_layout.addLayout(address_layout)
+
+        self.make_buttons()
 
 
 # Generate perforce config file containing info about:
 # P4PORT, P4USER, and P4CLIENT
 def make_p4_config():
-    P4PASSWD = "***********"
-    P4PORT = "***********"
+    dialog = P4_dialog()
+    dialog.exec()
+    if dialog.close_status == 0:
+        return
+    P4PASSWD = dialog.password
+    P4PORT = dialog.address
+
+    os.environ["P4PASSWD"] = P4PASSWD
+    os.environ["P4PORT"] = P4PORT
+
+    print(P4PASSWD, P4PORT)
 
     # set save path for P4CONFIG file based on OS
     OS = platform.system()
@@ -230,6 +305,8 @@ def make_p4_config():
         p4_config_path = os.path.normpath(
             os.path.expandvars("$USERPROFILE/Perforce/p4config.txt")
         )
+    else:
+        raise Exception("unkown OS: " + OS)
 
     # set temp environment variables to be able to use p4 commands
     os.environ["P4PORT"] = P4PORT
@@ -245,9 +322,32 @@ def make_p4_config():
     print("target path:", target_path)
 
     # grab a list of perforce clients
-    clients = subprocess.run(
-        ["p4", "clients"], stdout=subprocess.PIPE, text=True
-    ).stdout
+    p4_clients_process = subprocess.run(
+        ["p4", "clients"], capture_output=True, text=True
+    )
+    print("process:", p4_clients_process)
+    clients = p4_clients_process.stdout
+
+    if p4_clients_process.stderr:
+
+        def on_err_button():
+            err_dialog.close()
+            make_p4_config()
+
+        err_dialog = QDialog()
+        err_dialog.setMaximumSize(300, 100)
+        err_dialog.setWindowTitle("Error")
+        err_dialog_layout = QVBoxLayout()
+        err_dialog.setLayout(err_dialog_layout)
+        err_dialog_layout.addWidget(
+            QLabel("Error occured.\nMake sure you typed the correct login")
+        )
+        err_dialog_button = QPushButton("ok")
+        err_dialog_button.clicked.connect(on_err_button)
+        err_dialog_layout.addWidget(err_dialog_button)
+        err_dialog.exec()
+        return
+
     clients_list = clients.strip().split("\n")
 
     # create environment variables above loop scope
@@ -271,7 +371,7 @@ def make_p4_config():
         ).stdout
 
         # find host name in detailed client description
-        trail_host_name = ""
+        trial_host_name = ""
         for line in client_info.split("\n"):
             if line.startswith("Host:"):
                 trial_host_name = line.split("\t")[1].strip()
@@ -309,10 +409,12 @@ P4CLIENT={client_name}"""
     if client_owner == "core":
         P4CONFIG_contents += f"\nP4PASSWD={P4PASSWD}"
 
-    with open(p4_config_path, "w") as file:
-        file.write(P4CONFIG_contents)
-
     print("\n-- Found valid client --")
     print("Client:", client_name)
     print("Root Path:", root_path)
+
+    print("\nwriting contents:\n" + P4CONFIG_contents + "\nto:\n" + p4_config_path)
+    with open(p4_config_path, "w") as file:
+        file.write(P4CONFIG_contents)
+
     set_environment_variable("P4CONFIG", p4_config_path)

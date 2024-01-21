@@ -13,9 +13,10 @@ def launch_app():
         environment_setup.main()
     )  # assign window so it doesn't get garbage collected
     print("next hello world")
-    # file_utils.software_update(app)
-    # mainWin = MainWindow()
-    # mainWin.show()
+    # app.exit()
+    file_utils.software_update(app)
+    mainWin = MainWindow()
+    mainWin.show()
     app.exec()
     return app
 
