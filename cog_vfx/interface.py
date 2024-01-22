@@ -76,13 +76,16 @@ class MainWindow(QWidget):
 
         # Create tabs and corresponding content
         self.shot_tab = self.create_tab(
-            "  Shots", 0, get_pkg_asset_path("assets/icons/shot_white.png")
+            "Shots", 0, get_pkg_asset_path("assets/icons/shot_white.png")
         )
         self.asset_tab = self.create_tab(
-            "  Assets", 1, get_pkg_asset_path("assets/icons/sculpture_white.png")
+            "Assets", 1, get_pkg_asset_path("assets/icons/sculpture_white.png")
         )
         self.config_tab = self.create_tab(
-            "  Config", 2, get_pkg_asset_path("assets/icons/description_white.png")
+            "Config", 2, get_pkg_asset_path("assets/icons/description_white.png")
+        )
+        self.config_tab = self.create_tab(
+            "Pipeline", 2, get_pkg_asset_path("assets/icons/gear_white.png")
         )
 
         # button padding
@@ -104,23 +107,45 @@ class MainWindow(QWidget):
 
         # Default selection
         default_tab = self.shot_tab
-        default_tab["button"].click()
+        default_tab.click()
 
     def on_tab_hide_button_clicked(self):
-        if self.sidebar_widget.isHidden():
-            self.sidebar_widget.show()
-            self.tab_hide_button.setIcon(self.tab_hide_icon_open)
-        else:
-            self.sidebar_widget.hide()
-            self.tab_hide_button.setIcon(self.tab_hide_icon_closed)
+        buttons = self.tab_group.buttons()
+        for button in buttons:
+            button.collapse_toggle()
 
-    def create_tab(self, name, index, icon_path):
+        # if self.sidebar_widget.isHidden():
+        #     self.sidebar_widget.show()
+        #     self.tab_hide_button.setIcon(self.tab_hide_icon_open)
+        # else:
+        #     self.sidebar_widget.hide()
+        #     self.tab_hide_button.setIcon(self.tab_hide_icon_closed)
+
+    def create_tab(self, label, page_index, icon_path):
+        new_tab = SideTab(label, page_index, icon_path, self.central_stack)
+        self.tab_group.addButton(new_tab)
+        self.sidebar_layout.addWidget(new_tab)
+        return new_tab
+
+
+class SideTab(QPushButton):
+    def __init__(self, label, page_index, icon_path, central_stack):
+        super().__init__(label)
+        self.label = label
+        self.page_index = page_index
+        self.icon_path = icon_path
+        self.central_stack = central_stack
+
+        self.initUI()
+
+    def initUI(self):
         # set up button
-        button = QPushButton(name)
+        button = self
         button.setCheckable(True)
+        self.collapsed = False
 
         # button icon
-        button.setIcon(QIcon(icon_path))
+        button.setIcon(QIcon(self.icon_path))
         button.setIconSize(QSize(35, 35))
 
         button.setStyleSheet(
@@ -140,24 +165,35 @@ class MainWindow(QWidget):
         button.setFont(font)
 
         # button size
-        button.setMinimumSize(130, 50)
-        # button.setMaximumSize(230, 80)
-        button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.min_size_uncollapsed = (130, 50)
+        self.size_collapsed = (50, 50)
+        # button.setMaximumSize(150, 50)
+        self.uncollapse()
 
-        button.clicked.connect(lambda: self.central_stack.setCurrentIndex(index))
+        button.clicked.connect(
+            lambda: self.central_stack.setCurrentIndex(self.page_index)
+        )
 
-        self.tab_group.addButton(button)
-        self.sidebar_layout.addWidget(button)
+    def collapse(self):
+        print("collapsing")
+        self.setText("")
+        self.setFixedSize(*self.size_collapsed)
+        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.collapsed = True
 
-        return {"button": button, "index": index}
+    def uncollapse(self):
+        print("uncollapsing")
+        self.setText(self.label)
+        self.setMinimumSize(*self.min_size_uncollapsed)
+        self.setMaximumWidth(10000)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.collapsed = False
 
-    # def create_asset_page(self):
-    #     # Create content for Tab 2
-    #     self.asset_page_widget = QWidget()
-    #     self.asset_page_layout = QVBoxLayout(self.asset_page_widget)
-    #
-    #     self.asset_page_label = QLabel("Assets")
-    #     self.asset_page_layout.addWidget(self.asset_page_label)
+    def collapse_toggle(self):
+        if self.collapsed == True:
+            self.uncollapse()
+        else:
+            self.collapse()
 
 
 if __name__ == "__main__":
