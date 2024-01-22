@@ -13,6 +13,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ..utils import interface_utils
+
 
 def main():
     if not needs_install():
@@ -48,21 +50,46 @@ def get_project_root():
 def install_sequence():
     print("\n\n\n--------- Starting Install -------------")
     project_root = get_project_root()
+    HFS = get_HFS()
+    OS = platform.system()
 
     print("\n\n-------- Installing Houdini Package --------")
-    install_houdini_package(project_root)
+    install_houdini_package(project_root, HFS)
 
     print("\n\n------- Making Perforce Config File ---------")
-    make_p4_config()
+    make_p4_config(project_root)
+
+    if OS == "Windows":
+        print("\n\n------- Installing Hython Packages ---------")
+        install_hython_package("p4python", HFS)
 
     # Set Environment variables
     print("\n\n------- Setting Environment Variables --------")
     p4ignore_path = os.path.normpath(f"{project_root}/pipeline/perforce/p4ignore")
+    if platform.system() == "Windows":
+        p4ignore_path += ".txt"
+    p4ignore_path = f"{project_root}/pipeline/perforce/p4ignore"
+
     set_environment_variable("P4IGNORE", p4ignore_path)
     set_environment_variable("film_root", project_root)
 
     # Show success message
     print("\n-- install finished successfully -- ")
+
+
+def install_hython_package(package_name, HFS):
+    print("installing package:", package_name)
+
+    # Run the pip install command with the Python interpreter found by sys.executable
+    interpreter = HFS + "/bin/hython"
+    if platform.system() == "Windows":
+        interpreter += ".exe"
+    if not os.path.exists(interpreter):
+        print(f"Interpreter not at path: {interpreter}")
+        return
+    cmd = [interpreter, "-m", "pip", "install", package_name]
+    print("running command:", cmd)
+    print(subprocess.check_call(cmd))
 
 
 def set_environment_variable(key, value):
@@ -103,6 +130,7 @@ class InstallDialog(QDialog):
     def initUI(self):
         # -- setup window --
         self.main_layout = QVBoxLayout()
+        self.setStyleSheet(interface_utils.get_style_sheet())
         self.setMaximumSize(320, 120)
         self.setWindowTitle("Environment Setup")
         self.setLayout(self.main_layout)
@@ -153,17 +181,20 @@ def install_dialog():
     #     exit()
 
 
-def install_houdini_package(project_root):
-    # assuming a uniform houdini install path for now
-    # -- fetching paths --
+def get_HFS():
     OS = platform.system()
     if OS == "Linux":
         HFS = "/opt/hfs19.5.605"
     elif OS == "Windows":
-        HFS = r"C:/PROGRAM FILES/Side Effects Software/Houdini 19.5.603"
+        HFS = r"C:/PROGRAM FILES/Side Effects Software/Houdini 19.5.605"
     else:
         raise Exception("unknown OS: " + OS)
+    return HFS
 
+
+def install_houdini_package(project_root, HFS):
+    # assuming a uniform houdini install path for now
+    # -- fetching paths --
     # -- check for valid paths
     if not os.path.exists(HFS):
         raise Exception("file does not exits, expected HFS: " + HFS)
@@ -171,7 +202,6 @@ def install_houdini_package(project_root):
         raise Exception("file does not exits, expected project root: " + project_root)
 
     # -- print new paths --
-    print("OS:", OS)
     print("Houdini install path:", HFS)
     print("Project root:", project_root)
 
@@ -232,6 +262,7 @@ class P4_dialog(QDialog):
         self.initUI()
 
     def make_buttons(self):
+        self.setStyleSheet(interface_utils.get_style_sheet())
         # make button layout
         self.button_layout = QHBoxLayout()
         self.main_layout.addLayout(self.button_layout)
@@ -282,7 +313,7 @@ class P4_dialog(QDialog):
 
 # Generate perforce config file containing info about:
 # P4PORT, P4USER, and P4CLIENT
-def make_p4_config():
+def make_p4_config(project_root):
     dialog = P4_dialog()
     dialog.exec()
     if dialog.close_status == 0:
@@ -318,7 +349,7 @@ def make_p4_config():
         ["hostname"], stdout=subprocess.PIPE, text=True
     ).stdout.strip()
     print("target hostname:", host_name)
-    target_path = os.getenv("film_root")
+    target_path = project_root
     print("target path:", target_path)
 
     # grab a list of perforce clients
@@ -332,7 +363,7 @@ def make_p4_config():
 
         def on_err_button():
             err_dialog.close()
-            make_p4_config()
+            make_p4_config(project_root)
 
         err_dialog = QDialog()
         err_dialog.setMaximumSize(300, 100)
@@ -342,6 +373,7 @@ def make_p4_config():
         err_dialog_layout.addWidget(
             QLabel("Error occured.\nMake sure you typed the correct login")
         )
+        err_dialog.setStyleSheet(interface_utils.get_style_sheet())
         err_dialog_button = QPushButton("ok")
         err_dialog_button.clicked.connect(on_err_button)
         err_dialog_layout.addWidget(err_dialog_button)

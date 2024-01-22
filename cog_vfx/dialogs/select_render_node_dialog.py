@@ -1,9 +1,20 @@
 import os
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QListWidget, QPushButton, QListWidgetItem, QProgressBar
+
 from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtWidgets import (
+    QDialog,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QProgressBar,
+    QPushButton,
+    QVBoxLayout,
+)
+
+from ..utils import filter_env_vars, interface_utils
 from ..utils.file_utils import get_pkg_asset_path
 from ..utils.houdini_wrapper import launch_houdini, launch_hython
-from ..utils import filter_env_vars
+
 
 class RenderThread(QThread):
     progress_update = Signal(int)
@@ -14,24 +25,30 @@ class RenderThread(QThread):
         super(RenderThread, self).__init__()
         self.scene_path = scene_path
         self.shot_data = shot_data
-        self.node_path = render_node_path 
+        self.node_path = render_node_path
         self.process = None
 
     def run(self):
         # prepare script to run
         script = "import sys; module_directory = '{module_directory}';sys.path.append(module_directory); import husk_render; husk_render.exec_render_node('{scene_path}', '{node_path}')"
         module_directory = os.path.join(get_pkg_asset_path(""), "utils")
-        script = script.format(module_directory=module_directory, scene_path=self.scene_path, node_path=self.node_path)
+        script = script.format(
+            module_directory=module_directory,
+            scene_path=self.scene_path,
+            node_path=self.node_path,
+        )
 
         additional_vars = filter_env_vars(self.shot_data, "shot")
-        self.process = launch_hython(script=script, live_mode=True, additional_vars=additional_vars)
+        self.process = launch_hython(
+            script=script, live_mode=True, additional_vars=additional_vars
+        )
         while True:
             output = self.process.stdout.readline()
             # print("output", output)
-            if output == '' and self.process.poll() is not None:
+            if output == "" and self.process.poll() is not None:
                 break
-            if output.startswith('ALF_PROGRESS'):
-                progress = int(output.strip().split(' ')[1].rstrip('%'))
+            if output.startswith("ALF_PROGRESS"):
+                progress = int(output.strip().split(" ")[1].rstrip("%"))
                 self.progress_update.emit(progress)
             elif ">>> Render" in output:
                 frame_num = output[-9:-5]
@@ -42,6 +59,7 @@ class RenderThread(QThread):
         if self.process:
             self.process.terminate()
 
+
 class RenderLoading(QDialog):
     def __init__(self, parent, scene_path, shot_data, render_node_path):
         super(RenderLoading, self).__init__(parent)
@@ -50,7 +68,9 @@ class RenderLoading(QDialog):
         # self.subprocess_thread = subprocess_thread
 
         self.initUI()
-        self.subprocess_thread = RenderThread(self.scene_path, self.shot_data, render_node_path)
+        self.subprocess_thread = RenderThread(
+            self.scene_path, self.shot_data, render_node_path
+        )
         self.subprocess_thread.progress_update.connect(self.updateProgressBar)
         self.subprocess_thread.frame_update.connect(self.updateFrame)
         self.subprocess_thread.finished.connect(self.closeDialog)
@@ -63,7 +83,7 @@ class RenderLoading(QDialog):
 
         # Shot Label
         print(" \n\n\nSHOT DATA", self.shot_data)
-        self.shot_label = QLabel("Shot: "+self.shot_data['formatted_name'])
+        self.shot_label = QLabel("Shot: " + self.shot_data["formatted_name"])
         self.layout.addWidget(self.shot_label)
 
         self.frame_label = QLabel("Render Setup")
@@ -105,23 +125,28 @@ class PopulateListThread(QThread):
     def run(self):
         script = "import sys; module_directory = '{module_directory}';sys.path.append(module_directory); import husk_render; husk_render.get_render_nodes('{scene_path}')"
         module_directory = os.path.join(get_pkg_asset_path(""), "utils")
-        script = script.format(module_directory=module_directory, scene_path = self.scene_path)
+        script = script.format(
+            module_directory=module_directory, scene_path=self.scene_path
+        )
 
         # filter shot data into valid environment variables for the scene to use
         additional_vars = filter_env_vars(self.shot_data, "shot")
         # run script through hython
-        self.get_render_nodes_process = launch_hython(script=script, additional_vars=additional_vars)
+        self.get_render_nodes_process = launch_hython(
+            script=script, additional_vars=additional_vars
+        )
 
         # extract data from stdout
         render_nodes = []
         for stdout_line in self.get_render_nodes_process.stdout.split("\n"):
-            if(stdout_line.startswith("__RETURN_RENDER_NODE:")):
+            if stdout_line.startswith("__RETURN_RENDER_NODE:"):
                 stdout_line_split = stdout_line.split(":")
                 node_name = stdout_line_split[1]
                 node_path = stdout_line_split[2]
-                render_nodes.append({"name":node_name, "node_path":node_path})
+                render_nodes.append({"name": node_name, "node_path": node_path})
         print("emmiting", render_nodes)
         self.finished.emit(render_nodes)
+
 
 class SelectRenderNodeDialog(QDialog):
     def __init__(self, parent=None, scene_path=None, shot_data=None):
@@ -171,14 +196,11 @@ class SelectRenderNodeDialog(QDialog):
     def on_render_button(self):
         print("render button clicked")
         selected_items = self.render_node_list.selectedItems()
-        if(len(selected_items)==0):
+        if len(selected_items) == 0:
             return
         sel_layer_path = selected_items[0].data(self.layer_data_role)["node_path"]
         self.close()
-        render_loading = RenderLoading(self, self.scene_path, self.shot_data, sel_layer_path)
+        render_loading = RenderLoading(
+            self, self.scene_path, self.shot_data, sel_layer_path
+        )
         render_loading.show()
-
-
-
-
-

@@ -61,7 +61,7 @@ class ShotListPanel(AbstractListPanel):
 
     def on_element_add(self):
         self.new_shot_dialog = NewShotDialog(
-            self.element_list, edit=False, info_widget=self.info_widget
+            self.element_list, edit=False, info_widget=self.info_widget, parent=self
         )
         self.new_shot_dialog.exec()
 
@@ -79,6 +79,6 @@ class ShotListPanel(AbstractListPanel):
         selected_shot_data = get_list_widget_data(element_list)
 
         self.edit_shot_window = NewShotDialog(
-            self.element_list, edit=True, info_widget=self.info_widget
+            self.element_list, edit=True, info_widget=self.info_widget, parent=self
         )
         self.edit_shot_window.exec()

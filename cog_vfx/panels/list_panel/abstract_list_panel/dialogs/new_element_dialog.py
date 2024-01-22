@@ -61,7 +61,7 @@ class NewElementDialog(QDialog):
         self.mainLayout.addLayout(bottom_buttons_layout)
 
     def exec(self):
-        if self.existing_element_data:
+        if self.existing_element_data and self.edit_mode is True:
             self.fill_existing_values()
 
         return super().exec()

@@ -1,2 +1,3 @@
 recursive-include cog_vfx/assets *
-
+recursive-include cog_vfx *.py
+prune **/__pycache__

@@ -13,8 +13,10 @@ from ...abstract_list_panel.dialogs.new_element_dialog import NewElementDialog
 
 
 class NewShotDialog(NewElementDialog):
-    def __init__(self, element_list, edit=False, info_widget=None):
-        super().__init__(element_list, edit, "shot", info_widget=info_widget)
+    def __init__(self, element_list, edit=False, info_widget=None, parent=None):
+        super().__init__(
+            element_list, edit, "shot", info_widget=info_widget, parent=parent
+        )
         self.add_fields()
 
     def add_fields(self):
