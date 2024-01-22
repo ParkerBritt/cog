@@ -290,9 +290,6 @@ def make_p4_config():
     P4PASSWD = dialog.password
     P4PORT = dialog.address
 
-    os.environ["P4PASSWD"] = P4PASSWD
-    os.environ["P4PORT"] = P4PORT
-
     print(P4PASSWD, P4PORT)
 
     # set save path for P4CONFIG file based on OS
@@ -309,9 +306,12 @@ def make_p4_config():
         raise Exception("unkown OS: " + OS)
 
     # set temp environment variables to be able to use p4 commands
-    os.environ["P4PORT"] = P4PORT
     os.environ["P4USER"] = "core"
     os.environ["P4PASSWD"] = P4PASSWD
+    os.environ["P4PORT"] = P4PORT
+    # prevents from using existing configs which would avoid connection error
+    # and could leave the user with an invalid config
+    os.environ.pop("P4CONFIG", None)
 
     # check system's host name
     host_name = subprocess.run(
