@@ -15,9 +15,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from . import p4utils, shot_utils
-from .shot_utils import make_shot_json
-from .utils import get_project_root
+from . import p4utils
 
 
 def get_pkg_asset_path(path):

@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ....utils import file_utils, fonts, interface_utils, shot_utils
+from ..utils import file_utils, fonts, interface_utils
 
 # -- Object Selector --
 # def showContextMenu(position, list_widget):

@@ -1,5 +1,5 @@
-from ..utils.file_utils import get_pkg_asset_path
-from . import AbstractInfoPanel
+from ....abstract_panels.abstract_info_panel import AbstractInfoPanel
+from ....utils.file_utils import get_pkg_asset_path
 
 
 # create side panel for showing shot information

@@ -1,7 +1,7 @@
-from ..abstract_workspace_view.abstract_workspace_view import AbstractWorkspaceView
+from ....abstract_panels import AbstractWorkspacePanel
 
 
-class ShotWorkspaceView(AbstractWorkspaceView):
+class ShotWorkspacePanel(AbstractWorkspacePanel):
     def __init__(self, list_panel):
         super().__init__(list_panel)
         self.element_type = "shot"

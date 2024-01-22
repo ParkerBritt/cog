@@ -11,9 +11,9 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from ..utils import filter_env_vars, interface_utils
-from ..utils.file_utils import get_pkg_asset_path
-from ..utils.houdini_wrapper import launch_houdini, launch_hython
+from ....utils import filter_env_vars
+from ....utils.file_utils import get_pkg_asset_path
+from ....utils.houdini_wrapper import launch_hython
 
 
 class RenderThread(QThread):

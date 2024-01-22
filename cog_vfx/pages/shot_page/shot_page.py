@@ -1,50 +1,17 @@
-import json
-import os
-
-import pkg_resources
-from PySide6.QtCore import QSize, Qt, QThread, Signal
-from PySide6.QtGui import QFont, QIcon, QPixmap
+from PySide6.QtGui import QFont
 
 # import QT
-from PySide6.QtWidgets import (
-    QApplication,
-    QButtonGroup,
-    QDialog,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QListWidget,
-    QListWidgetItem,
-    QMenu,
-    QProgressBar,
-    QPushButton,
-    QScrollArea,
-    QSizePolicy,
-    QSpacerItem,
-    QSpinBox,
-    QSplitter,
-    QStackedLayout,
-    QTextEdit,
-    QTreeWidget,
-    QTreeWidgetItem,
-    QVBoxLayout,
-    QWidget,
-)
-
-# import panels
-from ..panels import (
-    AbstractInfoPanel,
-    AbstractListPanel,
-    ShotInfoPanel,
-    ShotListPanel,
-    ShotWorkspaceView,
-)
+from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
 # import utilities
-from ..utils import file_utils, interface_utils, shot_utils, utils
-from ..utils.file_utils import get_pkg_asset_path
-from ..utils.houdini_wrapper import launch_houdini, launch_hython
-from ..utils.interface_utils import quick_dialog
+from ...utils import file_utils, interface_utils, utils
+from ...utils.file_utils import get_pkg_asset_path
+from ...utils.houdini_wrapper import launch_houdini, launch_hython
+from ...utils.interface_utils import quick_dialog
+
+# import panels
+from .panels import ShotInfoPanel, ShotListPanel, ShotWorkspacePanel
+from .utils import shot_utils
 
 style_sheet = interface_utils.get_style_sheet()
 
@@ -88,7 +55,7 @@ class ShotPage(QWidget):
         self.shot_list_widget.tree_widget = self.workspace_files
 
     def create_file_tree_panel(self):
-        self.workspace_files = ShotWorkspaceView(self.shot_list_widget)
+        self.workspace_files = ShotWorkspacePanel(self.shot_list_widget)
         self.file_tree_layout_parent.addWidget(self.workspace_files)
         self.workspace_files.populate_file_tree()
 

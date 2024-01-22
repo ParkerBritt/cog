@@ -1,15 +1,8 @@
 import os
 
-from .....utils import (
-    add_shot_file_data,
-    edit_shot_json,
-    get_list_widget_data,
-    get_shots,
-    move_shot,
-    new_shot,
-    set_list_widget_data,
-)
-from ...abstract_list_panel.dialogs.new_element_dialog import NewElementDialog
+from ....abstract_dialogs import NewElementDialog
+from ....utils import get_list_widget_data, set_list_widget_data
+from ..utils import add_shot_file_data, edit_shot_json, get_shots, move_shot, new_shot
 
 
 class NewShotDialog(NewElementDialog):

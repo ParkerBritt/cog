@@ -2,7 +2,7 @@ import json
 import os
 import shutil
 
-from .utils import get_project_root
+from ....utils import get_project_root
 
 
 def add_shot_file_data(shot_data):

@@ -1,25 +1,18 @@
-import os
-
-import pkg_resources
-from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QFont, QIcon, QPixmap
+from PySide6.QtCore import QSize
+from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QButtonGroup,
     QHBoxLayout,
-    QLabel,
-    QListWidget,
-    QMenu,
     QPushButton,
     QSizePolicy,
-    QSplitter,
     QStackedLayout,
     QVBoxLayout,
     QWidget,
 )
 
 from .pages import AssetPage, ConfigPage, ShotPage
-from .utils import interface_utils, shot_utils, utils
+from .utils import interface_utils, utils
 from .utils.file_utils import get_pkg_asset_path
 
 

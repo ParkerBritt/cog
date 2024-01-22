@@ -1,5 +1,3 @@
-from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QFont, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QDialog,
     QHBoxLayout,
@@ -8,10 +6,9 @@ from PySide6.QtWidgets import (
     QSpinBox,
     QTextEdit,
     QVBoxLayout,
-    QWidget,
 )
 
-from .....utils.interface_utils import get_list_widget_data
+from ..utils.interface_utils import get_list_widget_data
 
 
 class NewElementDialog(QDialog):

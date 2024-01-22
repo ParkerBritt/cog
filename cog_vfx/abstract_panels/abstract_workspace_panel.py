@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
 )
 
 # project modules
-from ....utils import (
+from ..utils import (
     filter_env_vars,
     get_fonts,
     get_list_widget_data,
@@ -26,7 +26,7 @@ from ....utils import (
     get_style_sheet,
     open_file,
 )
-from ....utils.p4utils import get_file_info as p4_get_file_info
+from ..utils.p4utils import get_file_info as p4_get_file_info
 
 role_mapping = {
     "item_data": Qt.UserRole + 1,
@@ -43,7 +43,7 @@ def get_tree_item_data(item):
     return item_data
 
 
-class AbstractWorkspaceView(QWidget):
+class AbstractWorkspacePanel(QWidget):
     def __init__(self, list_panel):
         super().__init__()
         self.init_icons()

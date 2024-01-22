@@ -1,1 +1,2 @@
+from .new_shot_dialog import NewShotDialog
 from .select_render_node_dialog import SelectRenderNodeDialog
