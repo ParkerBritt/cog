@@ -14,6 +14,9 @@ from ..utils import shot_utils
 def handle_action_open(element_list):
     print("Opening Shot")
     shot_data = get_list_widget_data(element_list)
+    if not shot_data:
+        print("not item selected")
+        return
     scene_path = os.path.join(shot_data["dir"], "scene.hipnc")
 
     # filter shot data into valid environment variables for the scene to use
@@ -32,6 +35,9 @@ def handle_action_render(parent):
     element_list = parent.element_list
     print("Rendering Shot")
     shot_data = get_list_widget_data(element_list)
+    if not shot_data:
+        print("not item selected")
+        return
     scene_path = os.path.join(shot_data["dir"], "scene.hipnc")
     if os.path.exists(scene_path):
         select_render_node = SelectRenderNodeDialog(parent, scene_path, shot_data)
@@ -57,18 +63,23 @@ class ShotListPanel(AbstractListPanel):
         self.context_menu.addAction("Render Shot", lambda: handle_action_render(self))
         self.context_menu.addAction("Delete Shot", lambda: print("not yet implemented"))
 
+    def get_elements(self, element_name_filter):
+        return shot_utils.get_shots(element_name_filter)
+
     def set_elements(self):
         self.elements = shot_utils.get_shots()
 
     def on_element_add(self):
         self.new_shot_dialog = NewShotDialog(
-            self.element_list, edit=False, info_widget=self.info_widget, parent=self
+            self.element_list, edit=False, info_widget=self.info_widget, qt_parent=self
         )
         self.new_shot_dialog.exec()
 
         finished_status = self.new_shot_dialog.finished_status
         if finished_status == 0:  # if new shot created
-            self.populate_element_list()
+            new_items = self.populate_element_list(self.new_shot_dialog.new_shot_dir)
+            if len(new_items) > 0:
+                self.element_list.setCurrentItem(new_items[0])
 
     def on_element_edit(self):
         selected_items = self.element_list.selectedItems()
@@ -80,6 +91,6 @@ class ShotListPanel(AbstractListPanel):
         selected_shot_data = get_list_widget_data(element_list)
 
         self.edit_shot_window = NewShotDialog(
-            self.element_list, edit=True, info_widget=self.info_widget, parent=self
+            self.element_list, edit=True, info_widget=self.info_widget, qt_parent=self
         )
         self.edit_shot_window.exec()

@@ -1,14 +1,17 @@
+from P4 import os, platform
 from PySide6.QtWidgets import (
     QDialog,
+    QFileDialog,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QPushButton,
     QSpinBox,
     QTextEdit,
     QVBoxLayout,
 )
 
-from ..utils.interface_utils import get_list_widget_data
+from ..utils.interface_utils import get_icon, get_list_widget_data
 
 
 class NewElementDialog(QDialog):
@@ -17,10 +20,11 @@ class NewElementDialog(QDialog):
         element_list,
         edit=False,
         element_name="element",
-        parent=None,
+        qt_parent=None,
         info_widget=None,
     ):
-        super().__init__(parent)
+        super().__init__(qt_parent)
+        self.qt_parent = qt_parent
         self.finished_status = 1
         self.info_widget = info_widget
         print("\n\n\n\nINFO WIDGET", info_widget)
@@ -62,6 +66,16 @@ class NewElementDialog(QDialog):
             self.fill_existing_values()
 
         return super().exec()
+
+    def add_file_selector(self, label, update_key):
+        file_selector = FileSelector(parent=self, label=label)
+        self.input_fields.append(
+            {
+                "widget": file_selector,
+                "update_key": update_key,
+            }
+        )
+        return file_selector
 
     def add_spin_box(
         self, label, update_key, default_value=1, min_value=0, max_value=9999
@@ -146,17 +160,20 @@ class NewElementDialog(QDialog):
                 field_value = int(field_widget.text())
             elif isinstance(field_widget, QTextEdit):
                 field_value = field_widget.toPlainText()
+            elif isinstance(field_widget, FileSelector):
+                field_value = field_widget.get_thumbnail()
             new_element_data.update({field_key: field_value})
 
         #     print("FIELD", field)
         # print("New Element Data", new_element_data)
+        print("NEW ELEMENT DATA", new_element_data)
         return new_element_data
 
     def on_ok_pressed(self):
+        self.close()
         self.finished_status = 0
         self.new_element_data = self.get_new_element_data()
         self.on_exit()
-        self.close()
 
     def on_exit(self):
         print("on_exit method meant to be overwritten")
@@ -167,6 +184,8 @@ class NewElementDialog(QDialog):
 
     def fill_existing_values(self):
         for field in self.input_fields:
+            if not "update_key" in field:
+                continue
             self.fill_value(field["widget"], field["update_key"])
 
     #
@@ -201,3 +220,68 @@ class NewElementDialog(QDialog):
                 ":",
                 value in self.existing_element_data,
             )
+
+
+class FileSelector:
+    def __init__(self, parent, label):
+        self.parent = parent
+        self.label = label
+        self.selected_file = None
+        self.initUI()
+
+    def initUI(self):
+        self.main_layout = QHBoxLayout()
+        self.file_dialog = QFileDialog()
+        self.file_dialog.setNameFilter("Images (*.png *.jpg)")
+        OS = platform.system()
+        start_dir = os.getenv("HOME") if OS == "Linux" else os.getenv("USERPROFILE")
+        if not start_dir:
+            start_dir = ""
+        self.file_dialog.setDirectory(start_dir)
+
+        # dialog button
+        dialog_button = QPushButton("Select " + self.label)
+        dialog_button.setIcon(get_icon("folder_open_white.png"))
+        dialog_button.clicked.connect(self.select_file)
+        self.open_file_dialog_button = dialog_button
+        self.main_layout.addWidget(dialog_button)
+
+        file_path_line = QLineEdit()
+        file_path_line.editingFinished.connect(self.on_file_path_updated)
+        file_path_line.setPlaceholderText(self.label + " Path...")
+        self.file_path_line = file_path_line
+        self.main_layout.addWidget(file_path_line)
+        # self.file_dialog.setFileMode(QFileDialog.AnyFile)
+        # set working directory
+
+        self.parent.mainLayout.insertLayout(
+            self.parent.mainLayout.count() - 2, self.main_layout
+        )
+
+    def on_file_path_updated(self):
+        file_path = self.file_path_line.text().strip()
+        self.file_path_line.setText(file_path)
+        if not os.path.exists(file_path):
+            print("path doesn't exist")
+            self.file_path_line.setObjectName("invalidLine")
+            self.file_path_line.setStyleSheet(self.file_path_line.styleSheet())
+        else:
+            self.file_path_line.setObjectName("validLine")
+            self.file_path_line.setStyleSheet(self.file_path_line.styleSheet())
+
+    def get_thumbnail(self):
+        thumbnail_text = self.file_path_line.text()
+        if thumbnail_text.strip() == "":
+            return None
+        return thumbnail_text
+
+    def select_file(self):
+        print("button presed")
+        self.result = self.file_dialog.exec()
+        self.selected_files = self.file_dialog.selectedFiles()
+        print("RETURN", self.result)
+        print("SELECTED FILES", self.selected_files)
+
+        if self.result:
+            self.file_path_line.setText(self.selected_files[0])
+            self.file_path_line.editingFinished.emit()

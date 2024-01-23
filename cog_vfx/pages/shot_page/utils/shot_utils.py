@@ -8,7 +8,7 @@ from ....utils import get_project_root
 def add_shot_file_data(shot_data):
     project_root = get_project_root()
     shots_path = os.path.join(project_root, "shots")
-    shot_base_name = "SH" + shot_data["shot_num"].zfill(4)
+    shot_base_name = "SH" + str(shot_data["shot_num"]).zfill(4)
     shot_full_path = os.path.join(shots_path, shot_base_name)
     shot_data.update({"file_name": shot_base_name, "dir": shot_full_path})
 
@@ -22,11 +22,13 @@ def get_shots(shot_name_filter=None):
 
     if shot_name_filter:
         if shot_name_filter in shot_dirs:
+            print("using filter:", shot_name_filter)
             shot_dirs = [shot_dirs[shot_dirs.index(shot_name_filter)]]
         else:
             print(f"\n\nERROR: {shot_name_filter} not in {shot_dirs}")
             return 0
 
+    print("getting shots from: ", shot_dirs)
     for i, shot_base_name in enumerate(shot_dirs):
         # ignore files starting with underscores '_'
         if shot_base_name.startswith("_"):
@@ -68,7 +70,7 @@ def get_shots(shot_name_filter=None):
 
 
 def move_shot(qt_parent, source_shot_name, dest_shot_name):
-    from .interface_utils import quick_dialog
+    from ....utils.interface_utils import quick_dialog
 
     # find paths
     root_path = get_project_root()
@@ -76,22 +78,25 @@ def move_shot(qt_parent, source_shot_name, dest_shot_name):
     source_dir = os.path.join(shots_path, source_shot_name)
     dest_dir = os.path.join(shots_path, dest_shot_name)
     print(f"moving {source_dir} to {dest_dir}")
+
+    # check if source is valid
     if not os.path.exists(source_dir):
         print(f"ERROR: source dir: {source_dir} not found")
-        return
+        return (2, "")  # fail code indicating the original shot directory is incorrect
+    # check if destination is valid
     if os.path.exists(dest_dir):
         quick_dialog(
             qt_parent,
             f"{dest_shot_name} already exists.\nCancelling shot move.",
             "Can't move Shot",
         )
-        return
+        return (1, "")  # fail code indicating shot already exists
     print("TARGET DIR", source_dir)
     print("DEST DIR", dest_dir)
 
     shutil.move(source_dir, dest_dir)
 
-    return dest_dir
+    return (0, dest_dir)  # success code and the directory the shot was moved to
 
 
 def copy_template(template_path, dest_root):
@@ -130,7 +135,7 @@ def copy_template(template_path, dest_root):
 
 
 def new_shot(qt_parent, shot_name, shot_data=None):
-    from .interface_utils import quick_dialog
+    from ....utils.interface_utils import quick_dialog
 
     print(f"creating new shot: {shot_name}")
     # find paths
@@ -164,6 +169,7 @@ def make_shot_json(save_path, shot_data):
 
 
 def edit_shot_json(save_path, edit_shot_data):
+    print("\nwriting to json file:", save_path, "\njson data:", edit_shot_data, "\n")
     json_save_path = save_path
 
     with open(json_save_path, "r") as file:
@@ -176,3 +182,24 @@ def edit_shot_json(save_path, edit_shot_data):
 
     # return updated shot data
     return shot_data
+
+
+def format_thumbnail(source_file, dest_file):
+    from wand.color import Color
+    from wand.drawing import Drawing
+    from wand.image import Image
+
+    thumbnail = Image(filename=source_file)
+
+    with Image(filename=source_file) as img:
+        dimensions = (img.width, img.height)
+    width = dimensions[0]
+    height = dimensions[1]
+    radius = width * height / 30000
+
+    with Image(width=width, height=height, background=Color("transparent")) as mask:
+        with Drawing() as draw:
+            draw.rectangle(left=0, top=0, width=width, height=height, radius=radius)
+            draw(mask)
+        thumbnail.composite_channel("alpha", mask, "copy_opacity")
+        thumbnail.save(filename=dest_file)

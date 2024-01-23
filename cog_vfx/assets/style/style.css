@@ -3,6 +3,12 @@
     color: #fff;
 }
 
+QComboBox {
+    border: none;
+    background-color: #1b1e20;
+    border-radius: 8px;
+}
+
 QLabel {
     background-color: rgba(255, 255, 255, 0);
 }
@@ -35,15 +41,42 @@ QPushButton:checked {
 
 QSpinBox {
     background-color: #1b1e20;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 8px;
 }
 
+QSpinBox::up-button,
+QSpinBox::down-button {
+    /* width: 16px; */
+    /* border-radius: 5px; */
+    background-color: none;
+    border-width: 1px;
+}
+
+
+
 QLineEdit {
+    padding: 5px 10px;
     border-radius: 8px;
     background-color: #1b1e20;
+    /* border: 1px solid white; */
+}
+
+QLineEdit#invalidLine {
+    border-width: 2px;
+    border-style: solid;
+    border-color: #e63946;
+}
+
+QLineEdit#validLine {
+    border: none
 }
 
 QTextEdit {
+    border-radius: 12px;
     background-color: #1b1e20;
+    padding: 5px 2px;
 }
 
 QListWidget {
@@ -112,7 +145,7 @@ QMenu::item {
 }
 
 QMenu::item:selected {
-    background-color: #1e90ff;
+    background-color: #8952e0;
     color: #fff;
 }
 

@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ..utils import file_utils, fonts, interface_utils
+from ..utils import file_utils, fonts, interface_utils, quick_dialog
 
 # -- Object Selector --
 # def showContextMenu(position, list_widget):
@@ -125,21 +125,40 @@ class AbstractListPanel(QWidget):
     def update_element_info(self):
         pass
 
-    def populate_element_list(self):
+    def populate_element_list(self, directory=None):
         # check for previous selection
         prev_selected_items = self.element_list.selectedItems()
         has_prev_selection = len(prev_selected_items) != 0
         if has_prev_selection:
             prev_selected_text = prev_selected_items[0].text()
 
-        # clear contents
-        self.element_list.clear()
-
         # create new elements
-        self.set_elements()
-        for element_data in self.elements:
+        if directory:  # if a directory is specified, use that
+            elements = self.get_elements(
+                os.path.basename(directory)
+            )  # gets all the attributes that define an element, such as "description" or "name"
+            print(
+                "populating list with:",
+                os.path.basename(directory),
+                "elements:",
+                elements,
+            )
+        else:  # else just get all elements
+            # clear contents
+            self.element_list.clear()
+
+            self.set_elements()
+            elements = self.elements
+            print("populating list with all elements:", elements)
+
+        if not elements:
+            raise Exception("elements is a nonetype")
+
+        new_items = []
+        for element_data in elements:
             item_label = self.object_type.title() + " " + element_data["formatted_name"]
             item = QListWidgetItem(item_label, self.element_list)
+            new_items.append(item)
             # item.setData(role_mapping["element_data"], element)
             interface_utils.set_list_widget_data(item, element_data)
             thumbnail_path = os.path.join(element_data["dir"], "thumbnail.png")
@@ -151,6 +170,26 @@ class AbstractListPanel(QWidget):
 
         if not has_prev_selection:
             self.element_list.setCurrentRow(0)
+
+        return new_items
+
+    def update_all_thumbnails(self):
+        for i in range(self.element_list.count()):
+            item = self.element_list.item(i)
+            self.update_thumbnail(item)
+
+    def update_thumbnail(self, item):
+        element_data = interface_utils.get_list_widget_data(item=item)
+        if not element_data:
+            print("thumbnail could not be updated")
+            return False
+        thumbnail_path = os.path.join(element_data["dir"], "thumbnail.png")
+        item.setIcon(QIcon(thumbnail_path))
+        return True
+
+    def get_elements(self, element_name_filter):
+        print("get_elements method meant to be overloaded")
+        return {}
 
     def set_elements(self):
         print("set_elements method meant to be overloaded")
