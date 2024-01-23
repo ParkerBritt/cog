@@ -180,4 +180,5 @@ class NewShotDialog(NewElementDialog):
         new_shot(self, shot_file_name, self.new_shot_data)
         # for shot list panel to read to update list
         self.new_shot_dir = self.new_shot_data["dir"]
-        # self.update_thumbnail(self.new_shot_data)
+        self.shot_dir = self.new_shot_dir
+        self.update_thumbnail(self.new_shot_data)
