@@ -39,6 +39,10 @@ QPushButton:checked {
     background-color: #8952e0;
 }
 
+QTreeView::item:selected:active {
+    background-color: #8952e0;
+}
+
 QSpinBox {
     background-color: #1b1e20;
     padding: 5px 10px;

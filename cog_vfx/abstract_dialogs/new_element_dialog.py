@@ -231,7 +231,7 @@ class FileSelector:
 
     def initUI(self):
         self.main_layout = QHBoxLayout()
-        self.file_dialog = QFileDialog()
+        self.file_dialog = QFileDialog(self.parent)
         self.file_dialog.setNameFilter("Images (*.png *.jpg)")
         OS = platform.system()
         start_dir = os.getenv("HOME") if OS == "Linux" else os.getenv("USERPROFILE")
