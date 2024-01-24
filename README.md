@@ -17,7 +17,7 @@
 Cog is a **pipeline interface for VFX** and animation specifically designed for the needs of the team of the **Rebirth** student film.  
 Because Cog is tailoured to our team's specific needs and built around other tools, it may not fit all use cases or environments.
 
-![image](https://github.com/bluejamm/cog/assets/77124738/306567c5-e39f-4c3d-baf3-2b00e628af1c)
+![image](screenshots/main_interface.jpg)
 > **Warning**  
 > Cog is in a very early stage of development. It likely will never be in a state to be used publicly.
 
@@ -39,6 +39,9 @@ Because Cog is tailoured to our team's specific needs and built around other too
   - Shots can be created, edited, or deleted through the interface
 - **Auto Update**
   - Cog will automatically check for new package versions on your perforce repository and install the latest version
+- **Environment Setup**
+  - On the first launch Cog will setup the user's envrionment to enable the rest of the pipeline:
+    - creating config files, installing houdini packages, setting environment variables, installing python modules for the houdini python interpreter, etc.
 
 ## Installation
 ### Requirements
@@ -67,5 +70,3 @@ pip install dist/cog_vfx-0.1.tar.gz
 cog
 ```
 You can also create **.desktop** file or **Windows shortcut** to make accessing cog easier
-
-
