@@ -186,7 +186,7 @@ def get_HFS():
     if OS == "Linux":
         HFS = "/opt/hfs19.5.605"
     elif OS == "Windows":
-        HFS = r"C:/PROGRAM FILES/Side Effects Software/Houdini 19.5.605"
+        HFS = r"C:\Program Files\Side Effects Software\Houdini19.5.605"
     else:
         raise Exception("unknown OS: " + OS)
     return HFS

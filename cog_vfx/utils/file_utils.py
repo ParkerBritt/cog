@@ -41,10 +41,13 @@ def edit_asset_json(save_path, edit_shot_data):
 
 # -- update
 class UpdateDialog(QDialog):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        from cog_vfx.utils.interface_utils import get_style_sheet
+
         self.setWindowTitle("Update")
         self.layout = QVBoxLayout()
+        self.setStyleSheet(get_style_sheet())
         self.setLayout(self.layout)
         self.layout.addWidget(QLabel("New update available, update now?"))
 
