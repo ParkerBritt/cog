@@ -138,7 +138,11 @@ class PopulateListThread(QThread):
 
         # extract data from stdout
         render_nodes = []
-        for stdout_line in self.get_render_nodes_process.stdout.split("\n"):
+        stdout = self.get_render_nodes_process.stdout
+        if not stdout:
+            raise Exception("no return values")
+        print("STDOUT:", stdout)
+        for stdout_line in stdout.split("\n"):
             if stdout_line.startswith("__RETURN_RENDER_NODE:"):
                 stdout_line_split = stdout_line.split(":")
                 node_name = stdout_line_split[1]
