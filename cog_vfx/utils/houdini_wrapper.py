@@ -30,9 +30,9 @@ def set_environment_variables(additional_vars):
         os.environ[key] = str(value)
 
 
-def launch_application(app_path, file_path):
-    print("Launching app:", app_path, "file:", file_path)
-    subprocess.Popen([app_path, file_path])
+def launch_application(*args):
+    print("Launching app:", args)
+    subprocess.Popen(args)
 
 
 def launch_houdini(file_path, additional_vars=None):
@@ -60,7 +60,7 @@ def launch_houdini(file_path, additional_vars=None):
         app_path = "/opt/hfs19.5.605/bin/houdini"
 
     # launch houdini
-    launch_application(app_path, file_path)
+    launch_application(app_path, "-n", file_path)
 
 
 hython_path = (
