@@ -25,8 +25,9 @@ from ..utils import file_utils, fonts, interface_utils
 
 # -- info panel --
 class AbstractInfoPanel(QScrollArea):
-    def __init__(self, parent=None):
+    def __init__(self, page_controller, parent=None):
         super().__init__(parent)
+        self.page_controller = page_controller
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.width = 350
         self.setMaximumWidth(self.width)
@@ -37,7 +38,11 @@ class AbstractInfoPanel(QScrollArea):
         self.fonts = fonts.get_fonts()
 
         # init ui
+        self.connect_signals()
         self.init_ui()
+
+    def connect_signals(self):
+        pass
 
     def init_ui(self):
         self.setStyleSheet(
@@ -120,6 +125,7 @@ class AbstractInfoPanel(QScrollArea):
         # selected_item = selected_items[0]
         # sel_object_data =  selected_item.data(Qt.UserRole+1)
         sel_object_data = interface_utils.get_list_widget_data(list_widget)
+        print("SEL OBJECT LIST", sel_object_data)
         if isinstance(sel_object_data, int):
             return
 

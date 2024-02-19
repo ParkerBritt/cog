@@ -29,10 +29,16 @@ from ..utils import file_utils, fonts, interface_utils, quick_dialog
 
 class AbstractListPanel(QWidget):
     def __init__(
-        self, tree_widget=None, info_widget=None, parent=None, object_type="object"
+        self,
+        page_controller,
+        tree_widget=None,
+        info_widget=None,
+        parent=None,
+        object_type="object",
     ):
         super().__init__(parent)
         # assign argument variables
+        self.page_controller = page_controller
         self.object_type = object_type
         self.tree_widget = tree_widget
         self.info_widget = info_widget
@@ -117,6 +123,8 @@ class AbstractListPanel(QWidget):
                 element_item.setHidden(False)
 
     def on_element_selection_changed(self):
+        if self.page_controller:
+            self.page_controller.change_element_selection()
         if self.info_widget:
             self.info_widget.update_panel_info(self.element_list)
         if self.tree_widget:
@@ -220,23 +228,6 @@ class NewObjectInterface(QDialog):
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
-        # if(self.existing_element_data):
-        #     self.fill_existing_values()
-
-    # def fill_existing_values(self):
-    #     self.fill_value(self.select_start_frame, "start_frame")
-    #     self.fill_value(self.select_end_frame, "end_frame")
-    #     self.fill_value(self.element_description_box, "description")
-    #     self.fill_value(self.select_res_width, "res_width")
-    #     self.fill_value(self.select_res_height, "res_height")
-    #     self.fill_value(self.select_fps, "fps")
-    #
-    # def fill_value(self, widget, value):
-    #     if(value in self.existing_element_data):
-    #         if(isinstance(widget, QTextEdit)):
-    #             widget.setPlainText(self.existing_element_data[value])
-    #         elif(isinstance(widget, QSpinBox)):
-    #             widget.setValue(self.existing_element_data[value])
     def create_bottom_buttons():
         # bottom buttons
         bottom_buttons_layout = QHBoxLayout()

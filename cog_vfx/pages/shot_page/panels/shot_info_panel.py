@@ -4,8 +4,10 @@ from ....utils.file_utils import get_pkg_asset_path
 
 # create side panel for showing shot information
 class ShotInfoPanel(AbstractInfoPanel):
-    def __init__(self, parent=None):
+    def __init__(self, shot_controller, parent=None):
         super().__init__(parent)
+        self.shot_controller = shot_controller
+
         # title
         self.title.setText("Shot Info")
 

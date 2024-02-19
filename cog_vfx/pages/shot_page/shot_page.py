@@ -10,7 +10,12 @@ from ...utils.houdini_wrapper import launch_houdini, launch_hython
 from ...utils.interface_utils import quick_dialog
 
 # import panels
-from .panels import ShotInfoPanel, ShotListPanel, ShotWorkspacePanel
+from .panels import (
+    ShotInfoPanel,
+    ShotListPanel,
+    ShotPanelController,
+    ShotWorkspacePanel,
+)
 from .utils import shot_utils
 
 style_sheet = interface_utils.get_style_sheet()
@@ -43,10 +48,11 @@ class ShotPage(QWidget):
         self.shot_page_layout.addLayout(self.shot_side_layout)
         self.files_layout = QVBoxLayout()
         self.shot_page_layout.addLayout(self.files_layout)
-        # self.role_list_layout_parent = QVBoxLayout()
-        # self.files_layout.addLayout(self.role_list_layout_parent)
         self.file_tree_layout_parent = QVBoxLayout()
         self.files_layout.addLayout(self.file_tree_layout_parent)
+
+        # controller
+        self.shot_controller = ShotPanelController()
 
         self.create_shot_side_panel()
         self.create_shot_list_panel()
@@ -55,19 +61,21 @@ class ShotPage(QWidget):
         self.shot_list_widget.tree_widget = self.workspace_files
 
     def create_file_tree_panel(self):
-        self.workspace_files = ShotWorkspacePanel(self.shot_list_widget)
+        self.workspace_files = ShotWorkspacePanel(
+            self.shot_controller, self.shot_list_widget
+        )
         self.file_tree_layout_parent.addWidget(self.workspace_files)
         self.workspace_files.populate_file_tree()
 
     def create_shot_list_panel(self):
         self.shot_list_widget = ShotListPanel(
-            info_widget=self.shot_side_widget, parent=self
+            self.shot_controller, info_widget=self.shot_side_widget, parent=self
         )
         self.shot_list_layout_parent.addWidget(self.shot_list_widget)
         self.shot_list = self.shot_list_widget.element_list
 
     def create_shot_side_panel(self):
-        self.shot_side_widget = ShotInfoPanel()
+        self.shot_side_widget = ShotInfoPanel(self.shot_controller)
 
         # Create a content widget and a layout for it
         self.shot_page_layout.addWidget(self.shot_side_widget)
