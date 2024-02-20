@@ -22,10 +22,6 @@ from PySide6.QtWidgets import (
 
 from ..utils import file_utils, fonts, interface_utils, quick_dialog
 
-# -- Object Selector --
-# def showContextMenu(position, list_widget):
-#     ContextMenu(position, list_widget)
-
 
 class AbstractListPanel(QWidget):
     def __init__(
@@ -135,32 +131,15 @@ class AbstractListPanel(QWidget):
 
     def populate_element_list(self, directory=None):
         # check for previous selection
-        # prev_selected_items = self.element_list.selectedItems()
-        # has_prev_selection = len(prev_selected_items) != 0
-        # if has_prev_selection:
-        #     prev_selected_text = prev_selected_items[0].text()
+        prev_selected_items = self.element_list.selectedItems()
+        has_prev_selection = len(prev_selected_items) != 0
+        prev_selected_object = None
+        if has_prev_selection:
+            prev_selected_object = interface_utils.get_list_widget_data(
+                item=prev_selected_items[0]
+            )
 
-        # create new elements
-        # if directory:  # if a directory is specified, use that
-        #     elements = self.get_elements(
-        #         os.path.basename(directory)
-        #     )  # gets all the attributes that define an element, such as "description" or "name"
-        #     print(
-        #         "populating list with:",
-        #         os.path.basename(directory),
-        #         "elements:",
-        #         elements,
-        #     )
-        # else:  # else just get all elements
-        #     # clear contents
-        #     self.element_list.clear()
-        #
-        #     self.set_elements()
-        #     elements = self.elements
-        #     print("populating list with all elements:", elements)
-
-        # if not elements:
-        #     raise Exception("elements is a nonetype")
+        self.element_list.clear()
         elements = self.page_controller.elements
 
         new_items = []
@@ -170,14 +149,11 @@ class AbstractListPanel(QWidget):
             )
             item = QListWidgetItem(item_label, self.element_list)
 
-            # interface_utils.set_list_widget_data(item, element_data)
+            interface_utils.set_list_widget_data(item, element_data)
             item.setIcon(element_data.thumbnail)
 
-            # if has_prev_selection and item_label == prev_selected_text:
-            #     item.setSelected(True)
-
-        # if not has_prev_selection:
-        #     self.element_list.setCurrentRow(0)
+            if has_prev_selection and element_data is prev_selected_object:
+                item.setSelected(True)
 
         return new_items
 
