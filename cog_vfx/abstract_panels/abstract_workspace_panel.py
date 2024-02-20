@@ -44,13 +44,23 @@ def get_tree_item_data(item):
 
 
 class AbstractWorkspacePanel(QWidget):
-    def __init__(self, list_panel):
+    def __init__(self, page_controller):
         super().__init__()
+        self.page_controller = page_controller
         self.init_icons()
         self.file_tree_layout = QVBoxLayout(self)
-        self.element_list = list_panel.element_list
         self.style_sheet = get_style_sheet()
         self.element_type = None
+
+        self.connect_signals()
+        self.init_UI()
+
+    def connect_signals(self):
+        self.page_controller.on_element_selection_changed.connect(
+            self.populate_file_tree
+        )
+
+    def init_UI(self):
         self.setStyleSheet(
             """
     QWidget {
@@ -160,13 +170,17 @@ class AbstractWorkspacePanel(QWidget):
         tree_font = self.fonts["tree"]
 
         # fetch directory path
-        sel_element_data = get_list_widget_data(self.element_list)
-        if isinstance(sel_element_data, int):  # check for get_list_widget_data() error
-            return
-
-        if sel_element_data is None:
-            raise Exception("ERROR:", "no element selected")
-        directory_path = sel_element_data["dir"]
+        # sel_element_data = get_list_widget_data(self.element_list)
+        # if isinstance(sel_element_data, int):  # check for get_list_widget_data() error
+        #     return
+        #
+        # if sel_element_data is None:
+        #     raise Exception("ERROR:", "no element selected")
+        # directory_path = sel_element_data["dir"]
+        sel_elements = self.page_controller.get_selected_elements()
+        if not (sel_elements and len(sel_elements) > 0):
+            raise Exception("no item selected")
+        directory_path = sel_elements[0].dir
         directory_path += "/" + self.selected_role
         if not os.path.exists(directory_path):
             print("ERROR: directory does not exist: " + directory_path)

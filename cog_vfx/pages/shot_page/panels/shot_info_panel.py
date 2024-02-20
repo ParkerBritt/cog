@@ -53,6 +53,9 @@ class ShotInfoPanel(AbstractInfoPanel):
         self.description_label = self.description_section.add_label("{description}")
         # self.update_sections({"{shot_num}":"hello"})
 
-    def update_panel_info(self, element_object):
-        super().update_panel_info(element_object)
-        self.shot_thumbnail.set_image(element_object.thumbnail_path)
+    def update_panel_info(self, element_objects):
+        selected_element = self.shot_controller.get_selected_element()
+        if not selected_element:
+            return
+        super().update_panel_info(selected_element)
+        self.shot_thumbnail.set_image(selected_element.thumbnail_path)

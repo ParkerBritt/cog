@@ -19,7 +19,16 @@ class ShotPanelController(QObject):
         print(self.shots)
 
     def change_element_selection(self, shot=None):
+        self.selected_elements = shot
         self.on_element_selection_changed.emit(shot)
+
+    def get_selected_elements(self):
+        return self.selected_elements
+
+    def get_selected_element(self):
+        if not self.selected_elements:
+            return None
+        return self.selected_elements[0]
 
     def set_shots(self):
         self.shots_old = shot_utils.get_shots()

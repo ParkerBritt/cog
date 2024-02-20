@@ -52,16 +52,14 @@ class ShotPage(QWidget):
 
         self.create_shot_side_panel()
         self.create_shot_list_panel()
-        # self.create_file_tree_panel()
+        self.create_file_tree_panel()
         # connect widgets so selecting a new shot updates the tree
         # self.shot_list_widget.tree_widget = self.workspace_files
 
     def create_file_tree_panel(self):
-        self.workspace_files = ShotWorkspacePanel(
-            self.shot_controller, self.shot_list_widget
-        )
+        self.workspace_files = ShotWorkspacePanel(self.shot_controller)
         self.file_tree_layout_parent.addWidget(self.workspace_files)
-        self.workspace_files.populate_file_tree()
+        # self.workspace_files.populate_file_tree()
 
     def create_shot_list_panel(self):
         self.shot_list_widget = ShotListPanel(self.shot_controller, parent=self)

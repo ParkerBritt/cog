@@ -2,8 +2,8 @@ from ....abstract_panels import AbstractWorkspacePanel
 
 
 class ShotWorkspacePanel(AbstractWorkspacePanel):
-    def __init__(self, shot_controller, list_panel):
-        super().__init__(list_panel)
+    def __init__(self, shot_controller):
+        super().__init__(shot_controller)
         self.shot_controller = shot_controller
         self.element_type = "shot"
 

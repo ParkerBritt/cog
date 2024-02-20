@@ -122,10 +122,13 @@ class AbstractListPanel(QWidget):
         if self.page_controller:
             selected_items = self.element_list.selectedItems()
             if len(selected_items) > 0:
-                selected_object = interface_utils.get_list_widget_data(
-                    item=selected_items[0]
-                )
-                self.page_controller.change_element_selection(selected_object)
+                selected_objects = []
+                for selected_item in selected_items:
+                    selected_object = interface_utils.get_list_widget_data(
+                        item=selected_item
+                    )
+                    selected_objects.append(selected_object)
+                self.page_controller.change_element_selection(selected_objects)
         # if self.info_widget:
         #     self.info_widget.update_panel_info(self.element_list)
         # if self.tree_widget:
