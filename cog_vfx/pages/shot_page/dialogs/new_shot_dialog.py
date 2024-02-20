@@ -2,9 +2,6 @@ import os
 
 from ....abstract_dialogs import NewElementDialog
 
-# abstract utilities
-from ....utils import get_list_widget_data, set_list_widget_data
-
 # local utilities
 from ..utils import (
     add_shot_file_data,
@@ -17,14 +14,23 @@ from ..utils import (
 
 
 class NewShotDialog(NewElementDialog):
-    def __init__(self, element_list, edit=False, info_widget=None, qt_parent=None):
+    def __init__(
+        self,
+        page_controller,
+        edit=False,
+        qt_parent=None,
+    ):
         super().__init__(
-            element_list, edit, "shot", info_widget=info_widget, qt_parent=qt_parent
+            page_controller,
+            edit,
+            "shot",
+            qt_parent=qt_parent,
         )
         self.add_fields()
 
     def add_fields(self):
-        shot_data = get_list_widget_data(self.element_list)
+        shot_data = self.element_definition.get_mapped_data()
+        print("SHOT DATA", shot_data)
         if not shot_data:
             print("ERROR: cannot edit empty shot list")
             return
@@ -58,7 +64,7 @@ class NewShotDialog(NewElementDialog):
             return
 
         # setup variables
-        self.old_shot_data = get_list_widget_data(self.element_list)
+        self.old_shot_data = self.element_definition.get_mapped_data()
         if not self.old_shot_data:
             print("ERROR: cannot edit empty shot list")
             return
@@ -66,11 +72,10 @@ class NewShotDialog(NewElementDialog):
         self.shot_name = self.old_shot_data["file_name"]
         self.edit_shot_data = self.new_element_data
         print("EDIT SHOT DATA", self.edit_shot_data)
-        selected_shot = self.element_list.selectedItems()[0]
         self.shot_dir = self.old_shot_data["dir"]
 
         # move shot
-        self.move_shot(selected_shot)
+        self.move_shot()
 
         # edit json
         self.shot_json_data_blacklist = ["thumbnail"]
@@ -93,14 +98,17 @@ class NewShotDialog(NewElementDialog):
         # update list item data
         print("SETTING NEW SHOT DATA", self.new_shot_data)
         if self.new_shot_data != 0:
-            set_list_widget_data(selected_shot, self.new_shot_data)
+            #     set_list_widget_data(selected_shot, self.new_shot_data)
+            self.element_definition.set_mapped_data(self.new_shot_data)
+            self.page_controller.notify_shots_updated()
         else:
             print("can't find shot")
 
+        # notify controller to update info pannel
         # update info pannel
-        if self.info_widget:
-            print("\n\n\n\nUPDATING INFO PANNEL")
-            self.info_widget.update_panel_info(self.element_list)
+        # if self.info_widget:
+        #     print("\n\n\n\nUPDATING INFO PANNEL")
+        #     self.info_widget.update_panel_info(self.element_list)
         print("edit finished")
 
     def update_thumbnail(self, shot_data):
@@ -120,15 +128,16 @@ class NewShotDialog(NewElementDialog):
         dest_dir = os.path.join(self.shot_dir, "thumbnail.png")
         print("moving", thumbnail_path, "to", dest_dir)
         format_thumbnail(thumbnail_path, dest_dir)
-        if self.qt_parent:
-            selected_items = self.element_list.selectedItems()
-            if len(selected_items) == 0:
-                print("No item selected, can't update thumbnail")
-            self.qt_parent.update_thumbnail(selected_items[0])
+        self.element_definition.ChangeShotThumbnail(dest_dir)
+        # if self.qt_parent:
+        #     selected_items = self.element_list.selectedItems()
+        #     if len(selected_items) == 0:
+        #         print("No item selected, can't update thumbnail")
+        #     self.qt_parent.update_thumbnail(selected_items[0])
 
         print()  # new line
 
-    def move_shot(self, selected_shot):
+    def move_shot(self):
         if not self.old_shot_data:
             print("ERROR: cannot move shot, old_shot_data is int")
             return
@@ -165,7 +174,8 @@ class NewShotDialog(NewElementDialog):
                 return
             else:
                 self.new_shot_data = self.new_shot_data[0]
-            selected_shot.setText("Shot " + self.new_shot_data["formatted_name"])
+            self.element_definition.change_shot_number(self.edit_shot_data["shot_num"])
+            # selected_shot.setText("Shot " + self.new_shot_data["formatted_name"])
 
     def on_shot_add_finished(self):
         finished_stats = self.finished_status

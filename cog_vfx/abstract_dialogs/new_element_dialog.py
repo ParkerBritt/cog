@@ -17,26 +17,24 @@ from ..utils.interface_utils import get_icon, get_list_widget_data
 class NewElementDialog(QDialog):
     def __init__(
         self,
-        element_list,
+        page_controller,
         edit=False,
         element_name="element",
         qt_parent=None,
-        info_widget=None,
     ):
         super().__init__(qt_parent)
+        self.page_controller = page_controller
         self.qt_parent = qt_parent
         self.finished_status = 1
-        self.info_widget = info_widget
-        print("\n\n\n\nINFO WIDGET", info_widget)
         self.element_name = element_name
         self.setWindowTitle("New " + self.element_name)
         self.resize(400, 600)
-        self.element_list = element_list
+        self.element_definition = self.page_controller.get_selected_element()
         self.input_fields = []
 
         # edit mode stuff
         self.edit_mode = edit
-        self.existing_element_data = get_list_widget_data(element_list)
+        self.existing_element_data = self.element_definition.get_mapped_data()
 
         self.initUI()
 

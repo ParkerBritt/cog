@@ -45,6 +45,7 @@ class AbstractInfoPanel(QScrollArea):
         self.page_controller.on_element_selection_changed.connect(
             self.update_panel_info
         )
+        self.page_controller.connect_shots_updated(self.update_panel_info)
 
     def init_ui(self):
         self.setStyleSheet(
@@ -119,7 +120,7 @@ class AbstractInfoPanel(QScrollArea):
         self.object_edit_button.setStyleSheet(self.style_sheet)
         self.layout.addWidget(self.object_edit_button)
 
-    def update_panel_info(self, element_object):
+    def update_panel_info(self):
         # setup
         # selected_items = list_widget.selectedItems()
         # if(len(selected_items)==0):
@@ -136,7 +137,10 @@ class AbstractInfoPanel(QScrollArea):
 
         # if data exists in selected object then pair the placeholder and the new value
         # data = self.update_data
-        mapped_data = element_object.get_mapped_data()
+        selected_element = self.page_controller.get_selected_element()
+        print("\n\n\nSELECTED ELEMENT:", selected_element)
+        print("INFO PANNEL UPDATED")
+        mapped_data = selected_element.get_mapped_data()
         # data key would look something like "fps" or "asset_name". Then {fps} will be replaced in the label
         # for data_key in mapped_data:
         #     # print("data key", data_key)
