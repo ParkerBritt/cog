@@ -42,7 +42,9 @@ class AbstractInfoPanel(QScrollArea):
         self.init_ui()
 
     def connect_signals(self):
-        pass
+        self.page_controller.on_element_selection_changed.connect(
+            self.update_panel_info
+        )
 
     def init_ui(self):
         self.setStyleSheet(
@@ -117,35 +119,35 @@ class AbstractInfoPanel(QScrollArea):
         self.object_edit_button.setStyleSheet(self.style_sheet)
         self.layout.addWidget(self.object_edit_button)
 
-    def update_panel_info(self, list_widget):
+    def update_panel_info(self, element_object):
         # setup
         # selected_items = list_widget.selectedItems()
         # if(len(selected_items)==0):
         #     return
         # selected_item = selected_items[0]
         # sel_object_data =  selected_item.data(Qt.UserRole+1)
-        sel_object_data = interface_utils.get_list_widget_data(list_widget)
-        print("SEL OBJECT LIST", sel_object_data)
-        if isinstance(sel_object_data, int):
-            return
+        # sel_object_data = interface_utils.get_list_widget_data(list_widget)
+        # print("SEL OBJECT LIST", sel_object_data)
+        # if isinstance(sel_object_data, int):
+        #     return
 
         # sel_object_data = get_object_data(item=selected_object)
-        print("sel_object_data", sel_object_data)
+        # print("sel_object_data", sel_object_data)
 
         # if data exists in selected object then pair the placeholder and the new value
-        data = self.update_data
-        mapped_data = {}
+        # data = self.update_data
+        mapped_data = element_object.get_mapped_data()
         # data key would look something like "fps" or "asset_name". Then {fps} will be replaced in the label
-        for data_key in data:
-            # print("data key", data_key)
-            if not data_key in sel_object_data or sel_object_data[data_key] == "":
-                continue
-            mapped_data.update({"{" + data_key + "}": str(sel_object_data[data_key])})
+        # for data_key in mapped_data:
+        #     # print("data key", data_key)
+        #     if not data_key in sel_object_data or sel_object_data[data_key] == "":
+        #         continue
+        #     mapped_data.update({"{" + data_key + "}": str(sel_object_data[data_key])})
 
         # allows additional data to be mapped by defining the self.update_data_mapping variable
         # for example a value of {"{test}":"hello"} will update labels with {test} to the mapped value
-        if self.update_data_mapping:
-            mapped_data.update(self.update_data_mapping)
+        # if self.update_data_mapping:
+        #     mapped_data.update(self.update_data_mapping)
 
         self.update_sections(mapped_data)
 
@@ -189,12 +191,19 @@ class InfoSection:
 
                 found_placeholder = False
                 for placeholder in widget["placeholders"]:
-                    if not placeholder in update_data:
+                    placeholder_key = placeholder.strip("{}")
+                    if not placeholder_key in update_data:
+                        # print("placeholder_key:", placeholder, "not in", update_data)
                         continue
                     found_placeholder = True
-                    # print("replacing", placeholder, "with", update_data[placeholder])
+                    # print(
+                    #     "replacing",
+                    #     placeholder_key,
+                    #     "with",
+                    #     update_data[placeholder_key],
+                    # )
                     widget_text = widget_text.replace(
-                        placeholder, update_data[placeholder]
+                        placeholder, str(update_data[placeholder_key])
                     )
                 if not found_placeholder:
                     widget_object.hide()

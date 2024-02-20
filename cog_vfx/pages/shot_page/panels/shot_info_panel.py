@@ -5,7 +5,7 @@ from ....utils.file_utils import get_pkg_asset_path
 # create side panel for showing shot information
 class ShotInfoPanel(AbstractInfoPanel):
     def __init__(self, shot_controller, parent=None):
-        super().__init__(parent)
+        super().__init__(shot_controller, parent)
         self.shot_controller = shot_controller
 
         # title
@@ -53,6 +53,6 @@ class ShotInfoPanel(AbstractInfoPanel):
         self.description_label = self.description_section.add_label("{description}")
         # self.update_sections({"{shot_num}":"hello"})
 
-    def update_panel_info(self, list_widget):
-        super().update_panel_info(list_widget)
-        self.shot_thumbnail.set_image(list_widget)
+    def update_panel_info(self, element_object):
+        super().update_panel_info(element_object)
+        self.shot_thumbnail.set_image(element_object.thumbnail_path)

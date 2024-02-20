@@ -19,11 +19,23 @@ class ShotDefinition:
         self.fps = kwargs.get("fps", 24)
         self.dir = kwargs.get("dir", "")
         self.file_name = kwargs.get("file_name", "")
+        self.thumbnail_path = os.path.join(self.dir, "thumbnail.png")
         self.update_thumbnail()
 
+    def get_mapped_data(self):
+        return {
+            "start_frame": self.start_frame,
+            "end_frame": self.end_frame,
+            "description": self.description,
+            "res_width": self.res_width,
+            "res_height": self.res_height,
+            "fps": self.fps,
+            "dir": self.dir,
+            "file_name": self.file_name,
+        }
+
     def update_thumbnail(self):
-        thumbnail_path = os.path.join(self.dir, "thumbnail.png")
-        self.thumbnail = QIcon(thumbnail_path)
+        self.thumbnail = QIcon(self.thumbnail_path)
 
     def __repr__(self):
         return f"ShotDefinition: shot_num={self.shot_num}"

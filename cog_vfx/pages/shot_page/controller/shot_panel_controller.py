@@ -5,23 +5,21 @@ from .shot_definition import ShotDefinition
 
 
 class ShotPanelController(QObject):
-    on_element_selection_changed = Signal()
+    on_element_selection_changed = Signal(ShotDefinition)
 
     def __init__(self):
         super().__init__()
 
         self.shots = []
         self.elements = self.shots
+        self.selected_elements = None
         self.set_shots()
         # signals
-        self.on_element_selection_changed.connect(
-            lambda: print("\n\n\n\n\n\n\nELEMENT CHANGED TEST SUCCESSFULL!!!!")
-        )
         self.new_get_shots()
         print(self.shots)
 
-    def change_element_selection(self):
-        self.on_element_selection_changed.emit()
+    def change_element_selection(self, shot=None):
+        self.on_element_selection_changed.emit(shot)
 
     def set_shots(self):
         self.shots_old = shot_utils.get_shots()

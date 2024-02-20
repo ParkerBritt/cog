@@ -120,7 +120,12 @@ class AbstractListPanel(QWidget):
 
     def on_element_selection_changed(self):
         if self.page_controller:
-            self.page_controller.change_element_selection()
+            selected_items = self.element_list.selectedItems()
+            if len(selected_items) > 0:
+                selected_object = interface_utils.get_list_widget_data(
+                    item=selected_items[0]
+                )
+                self.page_controller.change_element_selection(selected_object)
         # if self.info_widget:
         #     self.info_widget.update_panel_info(self.element_list)
         # if self.tree_widget:
@@ -155,6 +160,8 @@ class AbstractListPanel(QWidget):
             if has_prev_selection and element_data is prev_selected_object:
                 item.setSelected(True)
 
+        if not has_prev_selection:
+            self.element_list.item(0).setSelected(True)
         return new_items
 
     def update_all_thumbnails(self):

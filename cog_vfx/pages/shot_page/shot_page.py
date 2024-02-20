@@ -50,7 +50,7 @@ class ShotPage(QWidget):
         # controller
         self.shot_controller = ShotPanelController()
 
-        # self.create_shot_side_panel()
+        self.create_shot_side_panel()
         self.create_shot_list_panel()
         # self.create_file_tree_panel()
         # connect widgets so selecting a new shot updates the tree
