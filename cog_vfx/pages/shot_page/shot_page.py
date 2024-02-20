@@ -8,14 +8,10 @@ from ...utils import file_utils, interface_utils, utils
 from ...utils.file_utils import get_pkg_asset_path
 from ...utils.houdini_wrapper import launch_houdini, launch_hython
 from ...utils.interface_utils import quick_dialog
+from .controller import ShotPanelController
 
 # import panels
-from .panels import (
-    ShotInfoPanel,
-    ShotListPanel,
-    ShotPanelController,
-    ShotWorkspacePanel,
-)
+from .panels import ShotInfoPanel, ShotListPanel, ShotWorkspacePanel
 from .utils import shot_utils
 
 style_sheet = interface_utils.get_style_sheet()
@@ -54,11 +50,11 @@ class ShotPage(QWidget):
         # controller
         self.shot_controller = ShotPanelController()
 
-        self.create_shot_side_panel()
+        # self.create_shot_side_panel()
         self.create_shot_list_panel()
-        self.create_file_tree_panel()
+        # self.create_file_tree_panel()
         # connect widgets so selecting a new shot updates the tree
-        self.shot_list_widget.tree_widget = self.workspace_files
+        # self.shot_list_widget.tree_widget = self.workspace_files
 
     def create_file_tree_panel(self):
         self.workspace_files = ShotWorkspacePanel(
@@ -68,9 +64,7 @@ class ShotPage(QWidget):
         self.workspace_files.populate_file_tree()
 
     def create_shot_list_panel(self):
-        self.shot_list_widget = ShotListPanel(
-            self.shot_controller, info_widget=self.shot_side_widget, parent=self
-        )
+        self.shot_list_widget = ShotListPanel(self.shot_controller, parent=self)
         self.shot_list_layout_parent.addWidget(self.shot_list_widget)
         self.shot_list = self.shot_list_widget.element_list
 

@@ -125,59 +125,59 @@ class AbstractListPanel(QWidget):
     def on_element_selection_changed(self):
         if self.page_controller:
             self.page_controller.change_element_selection()
-        if self.info_widget:
-            self.info_widget.update_panel_info(self.element_list)
-        if self.tree_widget:
-            self.tree_widget.populate_file_tree()
+        # if self.info_widget:
+        #     self.info_widget.update_panel_info(self.element_list)
+        # if self.tree_widget:
+        #     self.tree_widget.populate_file_tree()
 
     def update_element_info(self):
         pass
 
     def populate_element_list(self, directory=None):
         # check for previous selection
-        prev_selected_items = self.element_list.selectedItems()
-        has_prev_selection = len(prev_selected_items) != 0
-        if has_prev_selection:
-            prev_selected_text = prev_selected_items[0].text()
+        # prev_selected_items = self.element_list.selectedItems()
+        # has_prev_selection = len(prev_selected_items) != 0
+        # if has_prev_selection:
+        #     prev_selected_text = prev_selected_items[0].text()
 
         # create new elements
-        if directory:  # if a directory is specified, use that
-            elements = self.get_elements(
-                os.path.basename(directory)
-            )  # gets all the attributes that define an element, such as "description" or "name"
-            print(
-                "populating list with:",
-                os.path.basename(directory),
-                "elements:",
-                elements,
-            )
-        else:  # else just get all elements
-            # clear contents
-            self.element_list.clear()
+        # if directory:  # if a directory is specified, use that
+        #     elements = self.get_elements(
+        #         os.path.basename(directory)
+        #     )  # gets all the attributes that define an element, such as "description" or "name"
+        #     print(
+        #         "populating list with:",
+        #         os.path.basename(directory),
+        #         "elements:",
+        #         elements,
+        #     )
+        # else:  # else just get all elements
+        #     # clear contents
+        #     self.element_list.clear()
+        #
+        #     self.set_elements()
+        #     elements = self.elements
+        #     print("populating list with all elements:", elements)
 
-            self.set_elements()
-            elements = self.elements
-            print("populating list with all elements:", elements)
-
-        if not elements:
-            raise Exception("elements is a nonetype")
+        # if not elements:
+        #     raise Exception("elements is a nonetype")
+        elements = self.page_controller.elements
 
         new_items = []
         for element_data in elements:
-            item_label = self.object_type.title() + " " + element_data["formatted_name"]
+            item_label = (
+                element_data.element_type.title() + " " + element_data.formatted_name
+            )
             item = QListWidgetItem(item_label, self.element_list)
-            new_items.append(item)
-            # item.setData(role_mapping["element_data"], element)
-            interface_utils.set_list_widget_data(item, element_data)
-            thumbnail_path = os.path.join(element_data["dir"], "thumbnail.png")
-            # print("thumbnail path", thumbnail_path)
-            item.setIcon(QIcon(thumbnail_path))
 
-            if has_prev_selection and item_label == prev_selected_text:
-                item.setSelected(True)
+            # interface_utils.set_list_widget_data(item, element_data)
+            item.setIcon(element_data.thumbnail)
 
-        if not has_prev_selection:
-            self.element_list.setCurrentRow(0)
+            # if has_prev_selection and item_label == prev_selected_text:
+            #     item.setSelected(True)
+
+        # if not has_prev_selection:
+        #     self.element_list.setCurrentRow(0)
 
         return new_items
 
