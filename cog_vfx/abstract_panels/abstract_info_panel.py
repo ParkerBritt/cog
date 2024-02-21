@@ -139,7 +139,7 @@ class AbstractInfoPanel(QScrollArea):
         # data = self.update_data
         selected_element = self.page_controller.get_selected_element()
         print("\n\n\nSELECTED ELEMENT:", selected_element)
-        print("INFO PANNEL UPDATED")
+        print("INFO PANEL UPDATED")
         mapped_data = selected_element.get_mapped_data()
         # data key would look something like "fps" or "asset_name". Then {fps} will be replaced in the label
         # for data_key in mapped_data:

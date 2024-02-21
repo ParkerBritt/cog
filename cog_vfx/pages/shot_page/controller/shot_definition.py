@@ -45,6 +45,10 @@ class ShotDefinition:
         self.shot_num = new_shot_num
         self.formatted_name = "SH" + str(self.shot_num).zfill(4)
 
+    def change_shot_thumbnail(self, thumbnail_dir):
+        self.thumbnail_path = thumbnail_dir
+        self.update_thumbnail()
+
     def update_thumbnail(self):
         self.thumbnail = QIcon(self.thumbnail_path)
 

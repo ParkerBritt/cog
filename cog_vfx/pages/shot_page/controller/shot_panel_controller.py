@@ -23,6 +23,13 @@ class ShotPanelController(QObject):
     def get_selected_elements(self):
         return self.selected_elements
 
+    def add_shot(self, **kwargs):
+        print("adding shot:", kwargs)
+        new_shot_definition = ShotDefinition(**kwargs)
+        self.shots.append(new_shot_definition)
+        return new_shot_definition
+        print("finished adding shot, all shots:", self.shots)
+
     def get_selected_element(self):
         if not self.selected_elements:
             return None

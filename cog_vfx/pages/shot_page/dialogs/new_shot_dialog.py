@@ -128,7 +128,7 @@ class NewShotDialog(NewElementDialog):
         dest_dir = os.path.join(self.shot_dir, "thumbnail.png")
         print("moving", thumbnail_path, "to", dest_dir)
         format_thumbnail(thumbnail_path, dest_dir)
-        self.element_definition.ChangeShotThumbnail(dest_dir)
+        self.element_definition.change_shot_thumbnail(dest_dir)
         # if self.qt_parent:
         #     selected_items = self.element_list.selectedItems()
         #     if len(selected_items) == 0:
@@ -191,4 +191,6 @@ class NewShotDialog(NewElementDialog):
         # for shot list panel to read to update list
         self.new_shot_dir = self.new_shot_data["dir"]
         self.shot_dir = self.new_shot_dir
+        self.element_definition = self.page_controller.add_shot(**self.new_shot_data)
         self.update_thumbnail(self.new_shot_data)
+        self.page_controller.notify_shots_updated()
