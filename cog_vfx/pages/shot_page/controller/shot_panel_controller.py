@@ -26,7 +26,23 @@ class ShotPanelController(QObject):
     def add_shot(self, **kwargs):
         print("adding shot:", kwargs)
         new_shot_definition = ShotDefinition(**kwargs)
-        self.shots.append(new_shot_definition)
+        insertion_point = 0
+        for i, search_shot in enumerate(self.shots):
+            print("insertion point:", i)
+            print(
+                "search num",
+                search_shot.shot_num,
+                "new_shot_num",
+                new_shot_definition.shot_num,
+            )
+            if search_shot.shot_num > new_shot_definition.shot_num:
+                print("FOUND")
+                insertion_point = i
+                break
+
+        self.shots.insert(insertion_point, new_shot_definition)
+        print("chosen point", insertion_point)
+        print("SELF.SHOTS", self.shots)
         return new_shot_definition
         print("finished adding shot, all shots:", self.shots)
 

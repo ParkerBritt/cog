@@ -7,9 +7,8 @@ class ShotDefinition:
     def __init__(self, **kwargs):
         self.element_type = "shot"
         self.shot_num = kwargs.get("shot_num", None)
-        self.formatted_name = kwargs.get(
-            "formatted_name", "SH" + str(self.shot_num).zfill(4)
-        )
+        self.formatted_name = kwargs.get("formatted_name", str(self.shot_num).zfill(4))
+        print("FORMATTED NAME:", self.formatted_name)
 
         self.set_mapped_data(kwargs)
 
@@ -43,7 +42,7 @@ class ShotDefinition:
     def change_shot_number(self, new_shot_num):
         print("CHANGEING SHOT DEFINITION SHOT NUMBER TO:", new_shot_num)
         self.shot_num = new_shot_num
-        self.formatted_name = "SH" + str(self.shot_num).zfill(4)
+        self.formatted_name = str(self.shot_num).zfill(4)
 
     def change_shot_thumbnail(self, thumbnail_dir):
         self.thumbnail_path = thumbnail_dir
