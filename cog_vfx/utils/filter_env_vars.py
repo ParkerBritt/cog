@@ -19,6 +19,6 @@ def filter_env_vars(prospective_vars=None, element_type=None):
                 element_vars.append({key: prospective_vars[key]})
             elif key in remap_vars:
                 print("KEY", key, "IN REMAP VARS", remap_vars)
-                print("THING", {shot_remap[key]: prospective_vars[key]})
+                # print("THING", {shot_remap[key]: prospective_vars[key]})
                 element_vars.append({shot_remap[key]: prospective_vars[key]})
     return element_vars

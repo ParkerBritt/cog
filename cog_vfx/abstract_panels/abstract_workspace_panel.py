@@ -122,7 +122,9 @@ class AbstractWorkspacePanel(QWidget):
         else:
             file_type = item_data["file_type"]
             if file_type in [".mb", ".ma", ".hipnc"]:
-                sel_element_data = get_list_widget_data(self.element_list)
+                sel_element_data = (
+                    self.page_controller.get_selected_element().get_mapped_data()
+                )
                 env_vars = filter_env_vars(sel_element_data, self.element_type)
                 cmenu.addAction(
                     "Open", lambda: open_file(item_data["file_path"], env_vars)
