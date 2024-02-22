@@ -90,6 +90,8 @@ class AbstractWorkspacePanel(QWidget):
         self.file_tree.setColumnCount(0)
         self.file_tree.setHeaderLabels(["File Name"])
         self.file_tree_layout.addWidget(self.file_tree)
+        # signals
+        self.file_tree.itemExpanded.connect(self.on_folder_expanded)
 
         self.init_role_buttons()
 
@@ -250,13 +252,38 @@ class AbstractWorkspacePanel(QWidget):
             # print("root:",root)
             # print("dirs:", dirs)
             # print("files:", files)
-        self.populate_p4_status()
 
-    def populate_p4_status(self):
+        # get top level files
+        top_level_items = []
+        for i in range(self.file_tree.topLevelItemCount()):
+            top_level_item = self.file_tree.topLevelItem(i)
+            top_level_item_data = get_tree_item_data(top_level_item)
+            if top_level_item_data["is_dir"]:
+                continue
+            print("TOP LEVEL ITEM:", top_level_item.text(0))
+            top_level_items.append(top_level_item)
+        self.populate_p4_status(top_level_items)
+
+    def on_folder_expanded(self, item):
+        print("ITEM EXPANDED")
+        print("ITEM:", item)
+        print("ITEM NAME:", item.text(FILE_NAME_COL))
+        children = []
+        for i in range(item.childCount()):
+            child = item.child(i)
+            child_data = get_tree_item_data(child)
+            if child_data["is_dir"]:
+                continue
+            children.append(child)
+
+        print("CHILDREN:", children)
+        self.populate_p4_status(children)
+
+    def populate_p4_status(self, files):
         if hasattr(self, "populate_p4_status_thread"):
             self.populate_p4_status_thread.stop()
             self.populate_p4_status_thread.wait()
-        self.populate_p4_status_thread = populate_p4_status_thread(self.files)
+        self.populate_p4_status_thread = populate_p4_status_thread(files)
         self.populate_p4_status_thread.start()
 
         # print("file paths", file_paths)
