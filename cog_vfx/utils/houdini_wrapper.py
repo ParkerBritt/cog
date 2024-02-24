@@ -14,8 +14,9 @@ windows_env = {"ANOTHER_VARIABLE": "windows"}
 def set_environment_variables(additional_vars):
     # set additional environment variables
     if additional_vars:
-        for var in additional_vars:
-            env.update(var)
+        print("additional vars:", additional_vars)
+        for key, value in additional_vars.items():
+            env.update({key: value})
 
     if platform.system() == "Windows":
         env.update(windows_env)

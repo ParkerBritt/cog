@@ -68,18 +68,18 @@ class ShotListPanel(AbstractListPanel):
 # handle actions
 def handle_action_open(element_list):
     print("Opening Shot")
-    shot_data = get_list_widget_data(element_list)
-    if not shot_data:
+    shot_definition = get_list_widget_data(element_list)
+    if not shot_definition:
         print("not item selected")
         return
-    scene_path = os.path.join(shot_data["dir"], "scene.hipnc")
+    scene_path = os.path.join(shot_definition.dir, "scene.hipnc")
 
     # filter shot data into valid environment variables for the scene to use
-    additional_vars = filter_env_vars(shot_data, "shot")
+    additional_vars = shot_definition.get_env_vars()
     if os.path.exists(scene_path):
         launch_houdini(scene_path, additional_vars=additional_vars)
     else:
-        print("Error:", shot_data["file_name"], "has no scene.hipnc file")
+        print("Error:", shot_definition.file_name, "has no scene.hipnc file")
 
 
 def handle_action_delete():

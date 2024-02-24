@@ -28,6 +28,20 @@ class ShotDefinition:
             "file_name": self.file_name,
         }
 
+    def get_env_vars(self):
+        return {
+            "shot_num": self.shot_num,
+            "formatted_name": self.formatted_name,
+            "start_frame": self.start_frame,
+            "end_frame": self.end_frame,
+            "description": self.description,
+            "res_width": self.res_width,
+            "res_height": self.res_height,
+            "fps": self.fps,
+            "dir": self.dir,
+            "form_shot_num": self.file_name,
+        }
+
     def set_mapped_data(self, kwargs):
         self.start_frame = kwargs.get("start_frame", None)
         self.end_frame = kwargs.get("end_frame", None)
