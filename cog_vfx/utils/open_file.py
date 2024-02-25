@@ -37,10 +37,11 @@ def open_houdini(file_path):
 
 def open_maya(file_path):
     if platform.system() == "Windows":
-        os.startfile(file_path)
+        maya_path = r"C:\Program Files\Autodesk\Maya2024\bin\maya.exe"
+        # os.startfile(file_path)
     else:
         maya_path = "/usr/local/bin/maya"
-        subprocess.Popen((maya_path, file_path))
+    subprocess.Popen((maya_path, file_path))
 
 
 def open_file(file_path, env_vars=None):

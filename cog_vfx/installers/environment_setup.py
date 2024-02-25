@@ -63,6 +63,9 @@ def install_sequence():
         print("\n\n------- Installing Hython Packages ---------")
         install_hython_package("p4python", HFS)
 
+    print("\n\n------- Installing Maya Python Packages ---------")
+    install_maya_python_package("p4python")
+
     # Set Environment variables
     print("\n\n------- Setting Environment Variables --------")
     p4ignore_path = os.path.normpath(f"{project_root}/pipeline/perforce/p4ignore")
@@ -87,6 +90,30 @@ def install_hython_package(package_name, HFS):
     if not os.path.exists(interpreter):
         print(f"Interpreter not at path: {interpreter}")
         return
+    install_python_package(package_name, interpreter)
+
+
+def install_maya_python_package(package_name):
+    print("installing package:", package_name)
+
+    # Run the pip install command with the Python interpreter found by sys.executable
+    if platform.system() == "Windows":
+        interpreter_paths = ["C:/Program Files/Autodesk/Maya2024/bin/mayapy.exe"]
+    else:
+        interpreter_paths = ["/usr/autodesk/maya/bin/mayapy"]
+
+    interpreter = None
+    for interpreter_candidate in interpreter_paths:
+        if os.path.exists(interpreter_candidate):
+            interpreter = interpreter_candidate
+
+    if not interpreter:
+        print(f"Interpreter could not be found at: {interpreter_paths}")
+        return
+    install_python_package(package_name, interpreter)
+
+
+def install_python_package(package_name, interpreter):
     cmd = [interpreter, "-m", "pip", "install", package_name]
     print("running command:", cmd)
     print(subprocess.check_call(cmd))
@@ -186,9 +213,21 @@ def get_HFS():
     if OS == "Linux":
         HFS = "/opt/hfs19.5.605"
     elif OS == "Windows":
-        HFS = r"C:\Program Files\Side Effects Software\Houdini19.5.605"
+        HFS = None
+        path_candidates = [
+            r"C:\Program Files\Side Effects Software\Houdini19.5.605",
+            r"C:\Program Files\Side Effects Software\Houdini 19.5.605",
+        ]
+        for path in path_candidates:
+            if os.path.exists(path):
+                HFS = path
+                continue
+
+        if HFS is None:
+            raise Exception("coudn't find HFS path in: {path_candidates}")
     else:
         raise Exception("unknown OS: " + OS)
+
     return HFS
 
 
