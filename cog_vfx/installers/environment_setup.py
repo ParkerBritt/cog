@@ -65,6 +65,7 @@ def install_sequence():
 
     print("\n\n------- Installing Maya Python Packages ---------")
     install_maya_python_package("p4python")
+    install_maya_python_package("playsound")
 
     # Set Environment variables
     print("\n\n------- Setting Environment Variables --------")
