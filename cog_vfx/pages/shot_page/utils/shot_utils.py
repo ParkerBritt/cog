@@ -185,21 +185,35 @@ def edit_shot_json(save_path, edit_shot_data):
 
 
 def format_thumbnail(source_file, dest_file):
+    print("formatting thumbnail")
     from wand.color import Color
     from wand.drawing import Drawing
     from wand.image import Image
+    from wand.version import MAGICK_VERSION
 
     thumbnail = Image(filename=source_file)
+
+    # choose out supported composite mode based on version
+    magick_major_version = int(MAGICK_VERSION.split(" ")[1][0])
+    composite_mode = None
+    if(magick_major_version == 6):
+        composite_mode="copy_opacity"
+    elif(magick_major_version == 7):
+        composite_mode="copy_alpha"
+    else:
+        raise Exception("Image Magick version not supported:", magick_major_version, "full:", MAGICK_VERSION)
+    
 
     with Image(filename=source_file) as img:
         dimensions = (img.width, img.height)
     width = dimensions[0]
     height = dimensions[1]
-    radius = width * height / 30000
+    radius = (width * height) // 30000
+    print("radius:", radius, "width", width, "height", height)
 
     with Image(width=width, height=height, background=Color("transparent")) as mask:
         with Drawing() as draw:
             draw.rectangle(left=0, top=0, width=width, height=height, radius=radius)
             draw(mask)
-        thumbnail.composite_channel("alpha", mask, "copy_opacity")
+        thumbnail.composite_channel("alpha", mask, composite_mode)
         thumbnail.save(filename=dest_file)
