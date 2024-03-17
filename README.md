@@ -50,7 +50,7 @@ Because Cog is tailoured to our team's specific needs and built around other too
 
 First **clone** and **cd** into the repository  
 ```bash
-git clone https://github.com/bluejamm/cog
+git clone https://github.com/parkerbritt/cog
 cd cog
 ```
 ### (Option 1) Interactive installation
