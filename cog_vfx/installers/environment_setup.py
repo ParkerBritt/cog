@@ -50,18 +50,20 @@ def get_project_root():
 def install_sequence():
     print("\n\n\n--------- Starting Install -------------")
     project_root = get_project_root()
-    HFS = get_HFS()
     OS = platform.system()
+    HFS = get_HFS()
 
-    print("\n\n-------- Installing Houdini Package --------")
-    install_houdini_package(project_root, HFS)
+    if(HFS):
+        print("\n\n-------- Installing Houdini Package --------")
+        install_houdini_package(project_root, HFS)
+
+        if OS == "Windows":
+            print("\n\n------- Installing Hython Packages ---------")
+            install_hython_package("p4python", HFS)
 
     print("\n\n------- Making Perforce Config File ---------")
     make_p4_config(project_root)
 
-    if OS == "Windows":
-        print("\n\n------- Installing Hython Packages ---------")
-        install_hython_package("p4python", HFS)
 
     print("\n\n------- Installing Maya Python Packages ---------")
     install_maya_python_package("p4python")
@@ -224,8 +226,8 @@ def get_HFS():
                 HFS = path
                 continue
 
-        if HFS is None:
-            raise Exception("coudn't find HFS path in: {path_candidates}")
+        # if HFS is None:
+        #     raise Exception("coudn't find HFS path in: {path_candidates}")
     else:
         raise Exception("unknown OS: " + OS)
 
