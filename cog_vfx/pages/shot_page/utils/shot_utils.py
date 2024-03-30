@@ -191,8 +191,6 @@ def format_thumbnail(source_file, dest_file):
     from wand.image import Image
     from wand.version import MAGICK_VERSION
 
-    thumbnail = Image(filename=source_file)
-
     # choose out supported composite mode based on version
     magick_major_version = int(MAGICK_VERSION.split(" ")[1][0])
     composite_mode = None
@@ -204,16 +202,16 @@ def format_thumbnail(source_file, dest_file):
         raise Exception("Image Magick version not supported:", magick_major_version, "full:", MAGICK_VERSION)
     
 
-    with Image(filename=source_file) as img:
-        dimensions = (img.width, img.height)
-    width = dimensions[0]
-    height = dimensions[1]
-    radius = (width * height) // 30000
-    print("radius:", radius, "width", width, "height", height)
+    with Image(filename=source_file) as thumbnail:
+        dimensions = (thumbnail.width, thumbnail.height)
+        width = dimensions[0]
+        height = dimensions[1]
+        radius = (width * height) // 30000
+        print("radius:", radius, "width", width, "height", height)
 
-    with Image(width=width, height=height, background=Color("transparent")) as mask:
-        with Drawing() as draw:
-            draw.rectangle(left=0, top=0, width=width, height=height, radius=radius)
-            draw(mask)
-        thumbnail.composite_channel("alpha", mask, composite_mode)
-        thumbnail.save(filename=dest_file)
+        with Image(width=width, height=height, background=Color("transparent")) as mask:
+            with Drawing() as draw:
+                draw.rectangle(left=0, top=0, width=width, height=height, radius=radius)
+                draw(mask)
+            thumbnail.composite_channel("alpha", mask, composite_mode)
+            thumbnail.save(filename=dest_file)
