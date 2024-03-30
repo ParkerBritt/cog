@@ -102,15 +102,34 @@ def software_update(app):
     p4utils.get_latest(dist_file_depot)
 
     update_finished_dialog = UpdateFinishedDialog()
-    updater_script_path = p4utils.get_file_info(
-        "//finalProjectDepot/finalProjectStream/pipeline/_scripts/updater.py"
-    )[0]["client_file"]
+    # updater_script_path = p4utils.get_file_info(
+    #     "//finalProjectDepot/finalProjectStream/pipeline/_scripts/updater.py"
+    # )[0]["client_file"]
+    if platform.system() == "Windows":
+        home_dir = os.getenv("USERPROFILE")
+    else:
+        home_dir = os.getenv("HOME")
+    if not home_dir:
+        raise Exception("Env var USERPROFILE not found")
+
+    updater_script_path = os.path.join(home_dir, "Perforce/y3-film/pipeline/_scripts/updater.py")
+    updater_script_path = os.path.normpath(updater_script_path)
+
+    dist_file = os.path.join(home_dir, "Perforce/y3-film/pipeline/packages/2AM/cog/dist/cog_vfx-0.1.tar.gz")
+    dist_file = os.path.normpath(updater_script_path)
+
+    if not os.path.exists(updater_script_path):
+        raise Exception("Cannot find update script in path:", updater_script_path)
+
     # updater_script_path = os.path.join(os.getenv("film_root"), os.path.normpath("/pipeline/_scripts/updater.py"))
     print("dist file", dist_file)
     main_script = sys.argv[0]
     if platform.system() == "Windows":
         main_script += ".exe"
-    subprocess.Popen([sys.executable, updater_script_path, dist_file, main_script])
+
+    update_command_args = [sys.executable, updater_script_path, dist_file, main_script]
+    print("Executing command", update_command_args)
+    subprocess.Popen(update_command_args)
     app.quit()
     exit()
     # subprocess.check_call([f'"{sys.executable}"', "-m", "pip", "install", f'"{dist_file}"'])
@@ -122,6 +141,10 @@ def check_updatable(dist_file=None, file_info=None):
     #     raise Exception("Distribution file does not exist: "+dist_file)
     if not file_info:
         file_info = p4utils.get_file_info(dist_file)[0]
+
+    if not "have_rev" in file_info or not "head_rev" in file_info:
+        print("Have rev or head rev not in file info:", file_info)
+        return False
 
     if file_info["have_rev"] != file_info["head_rev"]:
         print("Package version out of date, getting latest revision")
