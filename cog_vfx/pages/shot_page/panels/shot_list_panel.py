@@ -69,6 +69,7 @@ class ShotListPanel(AbstractListPanel):
 def handle_action_open(element_list):
     print("Opening Shot")
     shot_definition = get_list_widget_data(element_list)
+
     if not shot_definition:
         print("not item selected")
         return

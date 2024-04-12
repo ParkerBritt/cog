@@ -23,7 +23,7 @@ class ShotDefinition:
             "description": self.description,
             "res_width": self.res_width,
             "res_height": self.res_height,
-            "fps": self.fps,
+            "output_fps": self.fps,
             "dir": self.dir,
             "file_name": self.file_name,
         }
@@ -37,7 +37,7 @@ class ShotDefinition:
             "description": self.description,
             "res_width": self.res_width,
             "res_height": self.res_height,
-            "fps": self.fps,
+            "output_fps": self.fps,
             "dir": self.dir,
             "form_shot_num": self.file_name,
         }
