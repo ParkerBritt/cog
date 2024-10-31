@@ -28,8 +28,8 @@ Because Cog is tailoured to our team's specific needs and built around other too
   - Interface built with Qt for Python
 - **Rendering**  
   - Local rendering using headless Houdini instances
-  - Remote distributed rendering planned
-  - Select individual layers to render
+  - Select individual layers to render  
+![image](screenshots/render_demo.gif)
 - **Project Environment Variables**
   - Environment envariables are set when opening project files (Houdini, Maya, Nuke, etc.)
   - Frame range, shot number, fps, description, etc.
