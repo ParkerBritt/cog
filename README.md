@@ -14,8 +14,8 @@
   <img src="https://img.shields.io/badge/Perforce-20a9dc?style=for-the-badge&logo=perforce&logoColor=404040">
 </p>
 
-Cog is a **pipeline interface for VFX** and animation specifically designed for the needs of the team of the **Rebirth** student film.  
-Because Cog is tailoured to our team's specific needs and built around other tools, it may not fit all use cases or environments.
+Cog is a **pipeline interface for VFX** and animation specifically designed for the needs of the team of the **[Rebirth](https://www.therookies.co/entries/28123)** student film.  
+Because Cog is tailoured to our team's specific needs and built around other tools, it will not fit all use cases or environments.
 
 ![image](screenshots/main_interface.jpg)
 > **Warning**  
